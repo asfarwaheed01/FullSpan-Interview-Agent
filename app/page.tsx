@@ -1,9 +1,9 @@
-import InterviewPage from "./pages/InterviewPage/InterviewPage";
+import LandingPage from "./pages/landingPage/LandingPage";
 
 export default function Home() {
   return (
     <div>
-      <InterviewPage />
+      <LandingPage />
     </div>
   );
 }
