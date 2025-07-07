@@ -12,12 +12,14 @@
     "@livekit/components-react": "^2.9.9",
     "@livekit/components-styles": "^1.1.6",
     "axios": "^1.9.0",
+    "firebase": "^11.10.0",
     "framer-motion": "^12.17.0",
     "livekit-client": "^2.13.4",
     "lucide-react": "^0.514.0",
     "next": "15.3.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-toastify": "^11.0.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -25,6 +27,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-toastify": "^4.0.2",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",

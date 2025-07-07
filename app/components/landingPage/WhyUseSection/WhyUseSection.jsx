@@ -79,19 +79,6 @@ export default function WhyUseSection() {
             </div>
           ))}
         </div>
-
-        {/* Call to Action */}
-        <div className="text-center">
-          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-full hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105 cursor-pointer group">
-            <span>Get Started</span>
-            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </div>
-
-        {/* Bottom decorative line */}
-        <div className="mt-20 flex justify-center">
-          <div className="w-24 h-1 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"></div>
-        </div>
       </div>
 
       {/* Background pattern */}

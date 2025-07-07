@@ -1,14 +1,18 @@
 "use client";
 import React, { useState } from "react";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, User, LogOut, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 const Navbar = () => {
   const router = useRouter();
+  const { user, isAuthenticated, logout } = useAuth();
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -18,10 +22,51 @@ const Navbar = () => {
     setIsLanguageDropdownOpen(!isLanguageDropdownOpen);
   };
 
+  const toggleUserDropdown = () => {
+    setIsUserDropdownOpen(!isUserDropdownOpen);
+  };
+
   const handleGetStartedClick = () => {
-    // Handle the "Get Started" button click
     setIsMobileMenuOpen(false);
     router.push("/login");
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsUserDropdownOpen(false);
+    setIsMobileMenuOpen(false);
+    router.push("/");
+  };
+
+  const handleProfileClick = () => {
+    setIsUserDropdownOpen(false);
+    setIsMobileMenuOpen(false);
+    router.push("/profile");
+  };
+
+  const handleSettingsClick = () => {
+    setIsUserDropdownOpen(false);
+    setIsMobileMenuOpen(false);
+    router.push("/settings");
+  };
+
+  // Generate avatar initials from username or email
+  const getAvatarInitials = () => {
+    if (!user) return "U";
+
+    if (user.username) {
+      const names = user.username.split("_");
+      if (names.length >= 2) {
+        return (names[0][0] + names[1][0]).toUpperCase();
+      }
+      return user.username.substring(0, 2).toUpperCase();
+    }
+
+    if (user.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+
+    return "U";
   };
 
   // Animation variants
@@ -65,7 +110,7 @@ const Navbar = () => {
     },
   };
 
-  const languageDropdownVariants = {
+  const dropdownVariants = {
     closed: {
       opacity: 0,
       scale: 0.95,
@@ -86,7 +131,7 @@ const Navbar = () => {
     },
   };
 
-  const mobileLanguageDropdownVariants = {
+  const mobileDropdownVariants = {
     closed: {
       opacity: 0,
       height: 0,
@@ -169,7 +214,7 @@ const Navbar = () => {
                     initial="closed"
                     animate="open"
                     exit="closed"
-                    variants={languageDropdownVariants}
+                    variants={dropdownVariants}
                     className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50 overflow-hidden"
                   >
                     <div className="py-1">
@@ -197,20 +242,88 @@ const Navbar = () => {
               </AnimatePresence>
             </div>
 
-            {/* Get Started Button */}
-            <motion.button
-              className="px-6 py-2 text-sm font-medium text-white rounded-lg transition-all duration-200"
-              style={{ backgroundColor: "#6576FF" }}
-              whileHover={{
-                scale: 1.05,
-                backgroundColor: "#5a6beb",
-              }}
-              onClick={handleGetStartedClick}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            >
-              Get Started
-            </motion.button>
+            {/* User Avatar or Get Started Button */}
+            {isAuthenticated && user ? (
+              <div className="relative">
+                <motion.button
+                  onClick={toggleUserDropdown}
+                  className="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    {getAvatarInitials()}
+                  </div>
+                  <motion.div
+                    animate={{ rotate: isUserDropdownOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                  </motion.div>
+                </motion.button>
+
+                <AnimatePresence>
+                  {isUserDropdownOpen && (
+                    <motion.div
+                      initial="closed"
+                      animate="open"
+                      exit="closed"
+                      variants={dropdownVariants}
+                      className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50 overflow-hidden"
+                    >
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.username}
+                        </p>
+                        <p className="text-sm text-gray-500 truncate">
+                          {user.email}
+                        </p>
+                        <p className="text-xs text-gray-400 capitalize mt-1">
+                          Role: {user.role}
+                        </p>
+                      </div>
+                      <div className="py-1">
+                        <button
+                          onClick={handleProfileClick}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                        >
+                          <User className="w-4 h-4 mr-3" />
+                          Profile
+                        </button>
+                        <button
+                          onClick={handleSettingsClick}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                        >
+                          <Settings className="w-4 h-4 mr-3" />
+                          Settings
+                        </button>
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                        >
+                          <LogOut className="w-4 h-4 mr-3" />
+                          Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <motion.button
+                className="px-6 py-2 text-sm font-medium text-white rounded-lg transition-all duration-200"
+                style={{ backgroundColor: "#6576FF" }}
+                whileHover={{
+                  scale: 1.05,
+                  backgroundColor: "#5a6beb",
+                }}
+                onClick={handleGetStartedClick}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              >
+                Get Started
+              </motion.button>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -311,7 +424,7 @@ const Navbar = () => {
                       initial="closed"
                       animate="open"
                       exit="closed"
-                      variants={mobileLanguageDropdownVariants}
+                      variants={mobileDropdownVariants}
                       className="mt-2 ml-4 space-y-1 overflow-hidden"
                     >
                       <a
@@ -337,22 +450,91 @@ const Navbar = () => {
                 </AnimatePresence>
               </motion.div>
 
-              {/* Mobile Get Started Button */}
-              <motion.div variants={menuItemVariants} className="px-3 pt-2">
-                <motion.button
-                  className="w-full px-6 py-2 text-sm font-medium text-white rounded-lg transition-all duration-200"
-                  style={{ backgroundColor: "#6576FF" }}
-                  whileHover={{
-                    scale: 1.02,
-                    backgroundColor: "#5a6beb",
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  onClick={handleGetStartedClick}
-                >
-                  Get Started
-                </motion.button>
-              </motion.div>
+              {/* Mobile User Section or Get Started Button */}
+              {isAuthenticated && user ? (
+                <motion.div variants={menuItemVariants} className="px-3 py-2">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                      {getAvatarInitials()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {user.username}
+                      </p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {user.email}
+                      </p>
+                      <p className="text-xs text-gray-400 capitalize">
+                        Role: {user.role}
+                      </p>
+                    </div>
+                  </div>
+
+                  <motion.button
+                    onClick={toggleUserDropdown}
+                    className="flex items-center justify-between w-full text-gray-900 hover:text-gray-600 text-base font-medium transition-colors duration-200"
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span>Account Options</span>
+                    <motion.div
+                      animate={{ rotate: isUserDropdownOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </motion.div>
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {isUserDropdownOpen && (
+                      <motion.div
+                        initial="closed"
+                        animate="open"
+                        exit="closed"
+                        variants={mobileDropdownVariants}
+                        className="mt-2 ml-4 space-y-2 overflow-hidden"
+                      >
+                        <button
+                          onClick={handleProfileClick}
+                          className="flex items-center w-full text-gray-600 hover:text-gray-900 text-sm py-2 transition-colors duration-150"
+                        >
+                          <User className="w-4 h-4 mr-3" />
+                          Profile
+                        </button>
+                        <button
+                          onClick={handleSettingsClick}
+                          className="flex items-center w-full text-gray-600 hover:text-gray-900 text-sm py-2 transition-colors duration-150"
+                        >
+                          <Settings className="w-4 h-4 mr-3" />
+                          Settings
+                        </button>
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center w-full text-red-600 hover:text-red-700 text-sm py-2 transition-colors duration-150"
+                        >
+                          <LogOut className="w-4 h-4 mr-3" />
+                          Logout
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              ) : (
+                <motion.div variants={menuItemVariants} className="px-3 pt-2">
+                  <motion.button
+                    className="w-full px-6 py-2 text-sm font-medium text-white rounded-lg transition-all duration-200"
+                    style={{ backgroundColor: "#6576FF" }}
+                    whileHover={{
+                      scale: 1.02,
+                      backgroundColor: "#5a6beb",
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                    onClick={handleGetStartedClick}
+                  >
+                    Get Started
+                  </motion.button>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         )}
