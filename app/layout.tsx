@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "./components/layout/navbar/Navbar";
-import Footer from "./components/layout/footer/Footer";
 import { ToastContainer } from "react-toastify";
 import { AuthProvider } from "./contexts/AuthContext";
 import ConditionalLayout from "./components/conditionalLayout/ConditionalLayout";

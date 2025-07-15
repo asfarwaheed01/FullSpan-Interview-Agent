@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Clock,
   Settings,
-  Menu,
   X,
   Crown,
   AlignJustify,
@@ -134,7 +133,7 @@ export default function DashboardSidebar() {
                 href={item.href}
                 onClick={closeMobile}
                 className={`
-                  group flex items-center px-3 py-3 rounded-lg text-sm font-medium 
+                  group flex items-center px-3 py-3 text-sm font-medium 
                   transition-all duration-200 relative
                   ${
                     isActive
@@ -167,7 +166,7 @@ export default function DashboardSidebar() {
 
                 {/* Active indicator */}
                 {isActive && (
-                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-blue-600 rounded-l-full" />
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600" />
                 )}
 
                 {/* Tooltip for collapsed state */}

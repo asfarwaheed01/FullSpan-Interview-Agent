@@ -1,4 +1,5 @@
-// app/dashboard/recent/page.tsx
+"use client";
+
 import {
   Calendar,
   Clock,
@@ -7,81 +8,246 @@ import {
   Filter,
   Search,
   Download,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getToken } from "@/app/utils/constants";
+
+interface Interview {
+  _id: string;
+  candidate_name: string;
+  occupation_name: string;
+  company_details: string;
+  interview_type: string;
+  duration: string;
+  status: string;
+  started_at: string;
+  ended_at?: string;
+  actual_duration?: number;
+  createdAt: string;
+}
+
+interface InterviewStats {
+  totalInterviews: number;
+  completedInterviews: number;
+  averageDuration: number;
+  statusBreakdown: {
+    [key: string]: number;
+  };
+}
+
+interface ApiResponse {
+  success: boolean;
+  data: {
+    interviews: Interview[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+}
+
+interface StatsResponse {
+  success: boolean;
+  data: InterviewStats;
+}
 
 export default function RecentInterviewsPage() {
-  const interviews = [
-    {
-      id: 1,
-      title: "Full Stack Developer",
-      company: "Stellar Tech Solutions",
-      date: "15-6-2025",
-      duration: "15 min",
-      score: 82,
-      status: "Excellent",
-      statusColor: "text-green-700 bg-green-50 border-green-200",
-    },
-    {
-      id: 2,
-      title: "UI UX Designer",
-      company: "Zee Frames",
-      date: "14-6-2025",
-      duration: "30 min",
-      score: 75,
-      status: "Good",
-      statusColor: "text-yellow-700 bg-yellow-50 border-yellow-200",
-    },
-    {
-      id: 3,
-      title: "UI UX Designer",
-      company: "Zee Frames",
-      date: "25-6-2025",
-      duration: "45 min",
-      score: 90,
-      status: "Excellent",
-      statusColor: "text-green-700 bg-green-50 border-green-200",
-    },
-    {
-      id: 4,
-      title: "Data Scientist",
-      company: "Quantum Analytics",
-      date: "30-6-2025",
-      duration: "60 min",
-      score: 88,
-      status: "Excellent",
-      statusColor: "text-green-700 bg-green-50 border-green-200",
-    },
-    {
-      id: 5,
-      title: "Product Manager",
-      company: "Innovate Corp",
-      date: "02-7-2025",
-      duration: "40 min",
-      score: 70,
-      status: "Good",
-      statusColor: "text-yellow-700 bg-yellow-50 border-yellow-200",
-    },
-    {
-      id: 6,
-      title: "DevOps Engineer",
-      company: "Tech Forward",
-      date: "10-7-2025",
-      duration: "50 min",
-      score: 85,
-      status: "Excellent",
-      statusColor: "text-green-700 bg-green-50 border-green-200",
-    },
-    {
-      id: 7,
-      title: "Marketing Specialist",
-      company: "Bright Future",
-      date: "12-7-2025",
-      duration: "25 min",
-      score: 78,
-      status: "Good",
-      statusColor: "text-yellow-700 bg-yellow-50 border-yellow-200",
-    },
-  ];
+  const token = getToken();
+  const [interviews, setInterviews] = useState<Interview[]>([]);
+  const [stats, setStats] = useState<InterviewStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("30");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const fetchInterviews = async (page = 1) => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "10",
+        ...(statusFilter !== "all" && { status: statusFilter }),
+      });
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/interviews?${params}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch interviews");
+      }
+
+      const data: ApiResponse = await response.json();
+      setInterviews(data.data.interviews);
+      setCurrentPage(data.data.pagination.page);
+      setTotalPages(data.data.pagination.pages);
+    } catch (error) {
+      console.error("Error fetching interviews:", error);
+      setError("Failed to load interviews");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/interviews/stats`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch stats");
+      }
+
+      const data: StatsResponse = await response.json();
+      setStats(data.data);
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchInterviews();
+      fetchStats();
+    }
+  }, [token, statusFilter]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "text-green-700 bg-green-50 border-green-200";
+      case "in_progress":
+        return "text-blue-700 bg-blue-50 border-blue-200";
+      case "cancelled":
+        return "text-red-700 bg-red-50 border-red-200";
+      case "failed":
+        return "text-red-700 bg-red-50 border-red-200";
+      default:
+        return "text-gray-700 bg-gray-50 border-gray-200";
+    }
+  };
+
+  const getStatusDisplay = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "Completed";
+      case "in_progress":
+        return "In Progress";
+      case "cancelled":
+        return "Cancelled";
+      case "failed":
+        return "Failed";
+      case "scheduled":
+        return "Scheduled";
+      default:
+        return status;
+    }
+  };
+
+  const filteredInterviews = interviews.filter((interview) => {
+    const matchesSearch =
+      interview.occupation_name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      interview.company_details
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      interview.candidate_name.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesSearch;
+  });
+
+  const handleExport = async () => {
+    try {
+      // You can implement CSV export here
+      const csvContent = [
+        ["Date", "Role", "Company", "Duration", "Status"],
+        ...filteredInterviews.map((interview) => [
+          formatDate(interview.createdAt),
+          interview.occupation_name,
+          interview.company_details,
+          `${interview.actual_duration || interview.duration} min`,
+          getStatusDisplay(interview.status),
+        ]),
+      ]
+        .map((row) => row.join(","))
+        .join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "interviews.csv";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export failed:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-center py-12">
+            <Loader2 size={40} className="animate-spin text-blue-600" />
+            <span className="ml-3 text-lg text-gray-600">
+              Loading interviews...
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+          <div className="text-center py-12">
+            <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Error Loading Interviews
+            </h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={() => fetchInterviews()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -99,7 +265,10 @@ export default function RecentInterviewsPage() {
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+            <button
+              onClick={handleExport}
+              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+            >
               <Download size={16} className="mr-2" />
               Export
             </button>
@@ -119,21 +288,32 @@ export default function RecentInterviewsPage() {
             />
             <input
               type="text"
-              placeholder="Search interviews by role, company, or date..."
+              placeholder="Search interviews by role, company, or candidate..."
               className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white">
-            <option>All Status</option>
-            <option>Excellent</option>
-            <option>Good</option>
-            <option>Needs Improvement</option>
+          <select
+            className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">All Status</option>
+            <option value="completed">Completed</option>
+            <option value="in_progress">In Progress</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="failed">Failed</option>
           </select>
-          <select className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white">
-            <option>Last 30 days</option>
-            <option>Last 7 days</option>
-            <option>Last 90 days</option>
-            <option>All time</option>
+          <select
+            className="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+          >
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="all">All time</option>
           </select>
         </div>
       </div>
@@ -147,7 +327,7 @@ export default function RecentInterviewsPage() {
                 Total Interviews
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {interviews.length}
+                {stats?.totalInterviews || 0}
               </p>
             </div>
             <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -160,16 +340,10 @@ export default function RecentInterviewsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">
-                Average Score
+                Completed
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {Math.round(
-                  interviews.reduce(
-                    (acc, interview) => acc + interview.score,
-                    0
-                  ) / interviews.length
-                )}
-                %
+                {stats?.completedInterviews || 0}
               </p>
             </div>
             <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
@@ -182,14 +356,10 @@ export default function RecentInterviewsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">
-                Total Time
+                Avg Duration
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {interviews.reduce(
-                  (acc, interview) => acc + parseInt(interview.duration),
-                  0
-                )}{" "}
-                min
+                {Math.round(stats?.averageDuration || 0)} min
               </p>
             </div>
             <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
@@ -205,11 +375,11 @@ export default function RecentInterviewsPage() {
                 Success Rate
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {Math.round(
-                  (interviews.filter((i) => i.status === "Excellent").length /
-                    interviews.length) *
-                    100
-                )}
+                {stats?.totalInterviews
+                  ? Math.round(
+                      (stats.completedInterviews / stats.totalInterviews) * 100
+                    )
+                  : 0}
                 %
               </p>
             </div>
@@ -224,84 +394,122 @@ export default function RecentInterviewsPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
-            Interview History
+            Interview History ({filteredInterviews.length})
           </h2>
         </div>
 
         <div className="divide-y divide-gray-200">
-          {interviews.map((interview) => (
-            <div
-              key={interview.id}
-              className="p-6 hover:bg-gray-50 transition-colors cursor-pointer group"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 space-y-2 sm:space-y-0">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 text-base mb-1">
-                        {interview.title}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        at {interview.company}
-                      </p>
+          {filteredInterviews.length === 0 ? (
+            <div className="p-12 text-center">
+              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No interviews found
+              </h3>
+              <p className="text-gray-600">
+                {searchTerm
+                  ? "Try adjusting your search terms"
+                  : "Start your first interview to see it here"}
+              </p>
+            </div>
+          ) : (
+            filteredInterviews.map((interview) => (
+              <div
+                key={interview._id}
+                className="p-6 hover:bg-gray-50 transition-colors cursor-pointer group"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 space-y-2 sm:space-y-0">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-base mb-1">
+                          {interview.occupation_name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {interview.company_details}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                            interview.status
+                          )}`}
+                        >
+                          {getStatusDisplay(interview.status)}
+                        </span>
+                        <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium border ${interview.statusColor}`}
-                      >
-                        {interview.status}
-                      </span>
-                      <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                    </div>
-                  </div>
 
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span>{interview.date}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span>{interview.duration}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span>{interview.score}% score</span>
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <span>{formatDate(interview.createdAt)}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <span>
+                          {interview.actual_duration || interview.duration} min
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <Star className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <span className="capitalize">
+                          {interview.interview_type} interview
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Pagination */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-          <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">1</span> to{" "}
-              <span className="font-medium">{interviews.length}</span> of{" "}
-              <span className="font-medium">{interviews.length}</span> results
-            </p>
-            <div className="flex items-center space-x-2">
-              <button
-                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
-                disabled
-              >
-                Previous
-              </button>
-              <button className="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700">
-                1
-              </button>
-              <button className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                2
-              </button>
-              <button className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                Next
-              </button>
+        {totalPages > 1 && (
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
+              <p className="text-sm text-gray-700">
+                Showing page <span className="font-medium">{currentPage}</span>{" "}
+                of <span className="font-medium">{totalPages}</span>
+              </p>
+              <div className="flex items-center space-x-2">
+                <button
+                  className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                  disabled={currentPage === 1}
+                  onClick={() => fetchInterviews(currentPage - 1)}
+                >
+                  Previous
+                </button>
+
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  const page = i + 1;
+                  return (
+                    <button
+                      key={page}
+                      className={`px-3 py-2 text-sm font-medium rounded-md ${
+                        currentPage === page
+                          ? "text-white bg-blue-600 border border-transparent"
+                          : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+                      }`}
+                      onClick={() => fetchInterviews(page)}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+
+                <button
+                  className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                  disabled={currentPage === totalPages}
+                  onClick={() => fetchInterviews(currentPage + 1)}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

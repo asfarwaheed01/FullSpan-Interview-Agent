@@ -105,7 +105,7 @@ const RegisterPage: React.FC = () => {
             router.push("/dashboard");
           }
         }, 2000);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Registration failed:", error);
       }
     } else {
@@ -124,13 +124,6 @@ const RegisterPage: React.FC = () => {
     if (loading) return;
     const target = e.target as HTMLButtonElement;
     target.style.backgroundColor = isEntering ? "#5a6beb" : "#6576FF";
-  };
-
-  const handleSocialLogin = (
-    provider: "facebook" | "google" | "apple"
-  ): void => {
-    console.log(`Register with ${provider}`);
-    // Implement social login logic here
   };
 
   return (

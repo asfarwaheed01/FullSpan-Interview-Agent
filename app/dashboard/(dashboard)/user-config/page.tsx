@@ -10,7 +10,6 @@ import {
   FileText,
   Award,
 } from "lucide-react";
-import { useAuth } from "@/app/contexts/AuthContext";
 
 interface PersonalInfo {
   name: string;
@@ -43,7 +42,6 @@ interface UserConfiguration {
 }
 
 const UserConfigPage = () => {
-  const { user } = useAuth();
   const [config, setConfig] = useState<UserConfiguration | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,9 +77,11 @@ const UserConfigPage = () => {
       if (data.success) {
         setConfig(data.data.configuration);
       }
-    } catch (error: any) {
-      setError(error.message);
-      toast.error(error.message || "Failed to load configuration", {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to load configuration";
+      setError(errorMessage);
+      toast.error(errorMessage, {
         position: "top-right",
         autoClose: 5000,
       });

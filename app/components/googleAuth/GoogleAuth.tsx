@@ -70,19 +70,23 @@ const GoogleAuth: React.FC<GoogleAuthProps> = ({
         });
         router.push("/dashboard");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Google Auth Error:", error);
 
       // Handle specific Firebase errors
       let errorMessage = "Google sign-in failed";
 
-      if (error.code === "auth/popup-closed-by-user") {
-        errorMessage = "Sign-in cancelled";
-      } else if (error.code === "auth/popup-blocked") {
-        errorMessage = "Popup blocked. Please allow popups and try again.";
-      } else if (error.code === "auth/network-request-failed") {
-        errorMessage = "Network error. Please check your connection.";
-      } else if (error.message) {
+      if (error && typeof error === "object" && "code" in error) {
+        if (error.code === "auth/popup-closed-by-user") {
+          errorMessage = "Sign-in cancelled";
+        } else if (error.code === "auth/popup-blocked") {
+          errorMessage = "Popup blocked. Please allow popups and try again.";
+        } else if (error.code === "auth/network-request-failed") {
+          errorMessage = "Network error. Please check your connection.";
+        }
+      }
+
+      if (error instanceof Error && error.message) {
         errorMessage = error.message;
       }
 

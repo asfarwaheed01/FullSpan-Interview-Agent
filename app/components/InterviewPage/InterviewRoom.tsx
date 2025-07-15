@@ -2,69 +2,38 @@
 
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Room, RoomEvent, Track } from "livekit-client";
+import { Room, RoomEvent } from "livekit-client";
 import {
   BarVisualizer,
   DisconnectButton,
   RoomAudioRenderer,
   RoomContext,
-  VideoTrack,
   VoiceAssistantControlBar,
   useVoiceAssistant,
-  useTracks,
-  useLocalParticipant,
 } from "@livekit/components-react";
 import {
   Phone,
   X,
   Mic,
   MicOff,
-  Video,
-  VideoOff,
   MessageSquare,
   AlertTriangle,
   Bot,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import {
   ConnectionDetails,
   InterviewFormData,
   InterviewResponse,
+  InterviewRoomProps,
+  PartialTranscript,
+  Participant,
+  TrackPublication,
+  TranscriptionSegment,
+  TranscriptMessage,
 } from "@/app/interfaces/interview";
 import { interviewAPI } from "@/app/utils/api";
-
-interface TranscriptMessage {
-  id: string;
-  participant: string;
-  text: string;
-  timestamp: Date;
-  isFinal: boolean;
-}
-
-interface PartialTranscript {
-  participant: string;
-  text: string;
-  lastUpdate: Date;
-}
-
-interface InterviewRoomProps {
-  interviewData: InterviewResponse;
-  formData: InterviewFormData;
-  onEndInterview: () => void;
-}
-
-interface TranscriptionSegment {
-  text: string;
-  final: boolean;
-}
-
-interface Participant {
-  identity?: string;
-  name?: string;
-}
-
-interface TrackPublication {
-  trackSid?: string;
-}
 
 const InterviewRoom: React.FC<InterviewRoomProps> = ({
   interviewData,
@@ -80,8 +49,8 @@ const InterviewRoom: React.FC<InterviewRoomProps> = ({
   const [partialTranscripts, setPartialTranscripts] = useState<
     Map<string, PartialTranscript>
   >(new Map());
-  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const [isMicEnabled, setIsMicEnabled] = useState(false);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [showTranscript, setShowTranscript] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
@@ -184,22 +153,6 @@ const InterviewRoom: React.FC<InterviewRoomProps> = ({
       } catch (error) {
         console.warn("Failed to enable microphone:", error);
       }
-
-      // Enable camera with delay
-      setTimeout(async () => {
-        if (room.state === "connected") {
-          try {
-            const videoOptions = {
-              resolution: { width: 1280, height: 720 },
-            };
-            await room.localParticipant.setCameraEnabled(true, videoOptions);
-            setIsVideoEnabled(true);
-            console.log("Camera enabled");
-          } catch (error) {
-            console.warn("Failed to enable camera:", error);
-          }
-        }
-      }, 2000);
 
       setIsConnected(true);
       setConnectionStatus("connected");
@@ -389,25 +342,32 @@ const InterviewRoom: React.FC<InterviewRoomProps> = ({
     }
   }, [room, isMicEnabled]);
 
-  const toggleCamera = useCallback(async () => {
-    if (room.state !== "connected") {
-      console.warn("Cannot toggle camera: Room not connected");
-      return;
+  const toggleAudio = useCallback(() => {
+    setIsAudioEnabled(!isAudioEnabled);
+    // This would control the playback volume of the AI agent
+    if (room.remoteParticipants.size > 0) {
+      room.remoteParticipants.forEach((participant) => {
+        participant.audioTrackPublications.forEach((publication) => {
+          if (
+            publication.track &&
+            publication.track.attachedElements.length > 0
+          ) {
+            // Control volume through HTML audio elements
+            publication.track.attachedElements.forEach((element) => {
+              if (element instanceof HTMLAudioElement) {
+                element.muted = !isAudioEnabled;
+              }
+            });
+          }
+        });
+      });
     }
-
-    try {
-      const enabled = !isVideoEnabled;
-      await room.localParticipant.setCameraEnabled(enabled);
-      setIsVideoEnabled(enabled);
-    } catch (error) {
-      console.error("Failed to toggle camera:", error);
-    }
-  }, [room, isVideoEnabled]);
+  }, [room, isAudioEnabled]);
 
   const onDeviceFailure = useCallback((error: Error) => {
     console.error(error);
     alert(
-      "Error acquiring camera or microphone permissions. Please make sure you grant the necessary permissions in your browser and reload the tab"
+      "Error acquiring microphone permissions. Please make sure you grant the necessary permissions in your browser and reload the tab"
     );
   }, []);
 
@@ -507,7 +467,7 @@ const InterviewRoom: React.FC<InterviewRoomProps> = ({
                     : "bg-red-400"
                 }`}
               ></div>
-              <h2 className="text-white font-semibold">AI Interview Session</h2>
+              <h2 className="text-white font-semibold">AI Voice Interview</h2>
               <span className="text-purple-300 text-sm">
                 {connectionStatus === "connecting"
                   ? "Connecting..."
@@ -541,17 +501,17 @@ const InterviewRoom: React.FC<InterviewRoomProps> = ({
               </button>
 
               <button
-                onClick={toggleCamera}
+                onClick={toggleAudio}
                 className={`p-2 rounded-lg transition-colors ${
-                  isVideoEnabled
+                  isAudioEnabled
                     ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
                     : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
                 }`}
               >
-                {isVideoEnabled ? (
-                  <Video className="w-4 h-4" />
+                {isAudioEnabled ? (
+                  <Volume2 className="w-4 h-4" />
                 ) : (
-                  <VideoOff className="w-4 h-4" />
+                  <VolumeX className="w-4 h-4" />
                 )}
               </button>
 
@@ -588,19 +548,12 @@ const InterviewRoom: React.FC<InterviewRoomProps> = ({
               showTranscript ? "pr-3" : ""
             }`}
           >
-            <div className="flex-1 flex gap-6">
-              {/* AI Agent Area */}
-              <div className="flex-1 flex items-center justify-center">
-                <div className="w-full max-w-4xl">
-                  <SimpleVoiceAssistant
-                    onConnectButtonClicked={onConnectButtonClicked}
-                  />
-                </div>
-              </div>
-
-              {/* User Video */}
-              <div className="w-80 flex flex-col">
-                <UserVideoSection />
+            <div className="flex-1 flex items-center justify-center">
+              {/* Voice Assistant - Full Width */}
+              <div className="w-full max-w-4xl">
+                <SimpleVoiceAssistant
+                  onConnectButtonClicked={onConnectButtonClicked}
+                />
               </div>
             </div>
           </div>
@@ -630,38 +583,7 @@ const InterviewRoom: React.FC<InterviewRoomProps> = ({
   );
 };
 
-// User Video Component
-function UserVideoSection() {
-  const { localParticipant } = useLocalParticipant();
-  const tracks = useTracks([Track.Source.Camera], { onlySubscribed: false });
-
-  const userVideoTrack = tracks.find(
-    (track) => track.participant === localParticipant
-  );
-
-  return (
-    <div className="space-y-4">
-      <h3 className="text-white font-semibold text-center">You</h3>
-      <div className="aspect-video bg-black/20 rounded-xl overflow-hidden border border-white/10">
-        {userVideoTrack ? (
-          <VideoTrack
-            trackRef={userVideoTrack}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-center">
-              <VideoOff className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-400 text-sm">Camera Off</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Transcript Panel Component
+// Transcript Panel Component (unchanged)
 function TranscriptPanel({
   transcript,
   partialTranscripts,
@@ -806,7 +728,7 @@ function TranscriptPanel({
   );
 }
 
-// Side Panel Component
+// Side Panel Component (unchanged)
 function SidePanel({
   formData,
   interviewData,
@@ -877,17 +799,16 @@ function SidePanel({
   );
 }
 
-// Simple Voice Assistant Component - RESTORED TO ORIGINAL WORKING VERSION
+// Simple Voice Assistant Component (Video removed, audio-only)
 function SimpleVoiceAssistant({
   onConnectButtonClicked,
 }: {
   onConnectButtonClicked: () => void;
 }) {
-  const { agent, state, videoTrack, audioTrack } = useVoiceAssistant();
+  const { agent, state, audioTrack } = useVoiceAssistant();
 
   console.log("SimpleVoiceAssistant - agentState:", state);
   console.log("SimpleVoiceAssistant - agent:", agent);
-  console.log("SimpleVoiceAssistant - videoTrack:", videoTrack);
   console.log("SimpleVoiceAssistant - audioTrack:", audioTrack);
 
   return (
@@ -910,7 +831,7 @@ function SimpleVoiceAssistant({
                 Ready to Start
               </h3>
               <p className="text-purple-300">
-                Click to begin your AI interview
+                Click to begin your AI voice interview
               </p>
             </div>
             <motion.button
@@ -920,7 +841,7 @@ function SimpleVoiceAssistant({
               className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105"
               onClick={onConnectButtonClicked}
             >
-              Start Interview
+              Start Voice Interview
             </motion.button>
           </motion.div>
         ) : state === "connecting" ? (
@@ -936,7 +857,9 @@ function SimpleVoiceAssistant({
             <h3 className="text-2xl font-bold text-white mb-2">
               Connecting...
             </h3>
-            <p className="text-yellow-300">Setting up your interview session</p>
+            <p className="text-yellow-300">
+              Setting up your voice interview session
+            </p>
           </motion.div>
         ) : (
           <motion.div
@@ -956,101 +879,86 @@ function SimpleVoiceAssistant({
   );
 }
 
-// Agent Visualizer - RESTORED TO ORIGINAL WORKING VERSION + VIDEO SUPPORT
+// Agent Visualizer - Voice Only (No Video)
 function AgentVisualizer() {
-  const { state, videoTrack, audioTrack } = useVoiceAssistant();
+  const { state, audioTrack } = useVoiceAssistant();
 
-  // If video track is available, show video
-  if (videoTrack) {
-    console.log("✅ Displaying agent video track");
-    return (
-      <div className="w-full max-w-lg">
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/10">
-          <div className="p-4 bg-gradient-to-r from-purple-600/20 to-indigo-600/20 border-b border-white/10">
-            <div className="flex items-center justify-center gap-2">
-              <Bot className="w-5 h-5 text-purple-400" />
-              <h3 className="text-lg font-semibold text-white">
-                AI Interviewer
-              </h3>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-xs text-purple-300 capitalize">
-                  {state}
-                </span>
-              </div>
-            </div>
-            <div className="text-center mt-2">
-              <span className="text-xs text-green-300">✅ Video Connected</span>
-            </div>
-          </div>
-          <div className="aspect-video relative bg-gradient-to-br from-purple-900/50 to-indigo-900/50">
-            <VideoTrack
-              trackRef={videoTrack}
-              className="w-full h-full object-cover"
-            />
-            {/* Audio visualizer overlay */}
-            {audioTrack && (
-              <div className="absolute bottom-4 left-4 right-4">
-                <div className="bg-black/50 backdrop-blur-sm rounded-lg p-2">
-                  <BarVisualizer
-                    state={state}
-                    barCount={7}
-                    trackRef={audioTrack}
-                    className="agent-audio-visualizer"
-                    options={{ minHeight: 8, maxHeight: 24 }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Original audio-only visualizer (RESTORED)
-  console.log("📻 Displaying audio-only visualizer");
   return (
     <div className="w-full max-w-lg">
       <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
         <div className="text-center mb-6">
-          <div className="w-20 h-20 bg-purple-600/20 rounded-full flex items-center justify-center mb-4 mx-auto border border-purple-500/30">
-            <Bot className="w-10 h-10 text-purple-400" />
+          <div className="w-24 h-24 bg-purple-600/20 rounded-full flex items-center justify-center mb-4 mx-auto border border-purple-500/30">
+            <Bot className="w-12 h-12 text-purple-400" />
           </div>
           <h3 className="text-xl font-semibold text-white mb-2">
-            AI Interviewer
+            AI Voice Interviewer
           </h3>
-          <p className="text-purple-300 text-sm capitalize">{state}</p>
+          <p className="text-purple-300 text-sm capitalize flex items-center justify-center gap-2">
+            <div
+              className={`w-2 h-2 rounded-full ${
+                state === "speaking"
+                  ? "bg-green-400 animate-pulse"
+                  : state === "listening"
+                  ? "bg-blue-400 animate-pulse"
+                  : state === "thinking"
+                  ? "bg-yellow-400 animate-pulse"
+                  : "bg-gray-400"
+              }`}
+            ></div>
+            {state === "speaking"
+              ? "Speaking"
+              : state === "listening"
+              ? "Listening"
+              : state === "thinking"
+              ? "Thinking"
+              : state}
+          </p>
         </div>
-        <div className="h-32">
+
+        {/* Large Audio Visualizer */}
+        <div className="h-40 flex items-center justify-center">
           <BarVisualizer
             state={state}
-            barCount={5}
+            barCount={12}
             trackRef={audioTrack}
-            className="agent-visualizer"
-            options={{ minHeight: 24 }}
+            className="agent-visualizer w-full"
+            options={{
+              minHeight: 8,
+              maxHeight: 120,
+            }}
           />
         </div>
-        {state === "listening" && (
-          <div className="text-center mt-4">
-            <p className="text-sm text-purple-300 animate-pulse">
-              The AI is listening...
+
+        {/* Status Messages */}
+        <div className="text-center mt-6">
+          {state === "listening" && (
+            <p className="text-sm text-blue-300 animate-pulse flex items-center justify-center gap-2">
+              <Mic className="w-4 h-4" />
+              Listening to your response...
             </p>
-          </div>
-        )}
-        {state === "speaking" && (
-          <div className="text-center mt-4">
-            <p className="text-sm text-green-300 animate-pulse">
-              The AI is speaking...
+          )}
+          {state === "speaking" && (
+            <p className="text-sm text-green-300 animate-pulse flex items-center justify-center gap-2">
+              <Volume2 className="w-4 h-4" />
+              AI is speaking...
             </p>
-          </div>
-        )}
+          )}
+          {state === "thinking" && (
+            <p className="text-sm text-yellow-300 animate-pulse flex items-center justify-center gap-2">
+              <Bot className="w-4 h-4" />
+              AI is thinking...
+            </p>
+          )}
+          {state === "connecting" && (
+            <p className="text-sm text-purple-300">Ready for conversation</p>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-// Control Bar - RESTORED TO ORIGINAL
+// Control Bar (unchanged)
 function ControlBar() {
   const { state: agentState } = useVoiceAssistant();
 

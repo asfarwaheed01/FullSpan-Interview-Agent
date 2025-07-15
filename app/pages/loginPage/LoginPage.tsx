@@ -100,13 +100,6 @@ const LoginPage: React.FC = () => {
     target.style.backgroundColor = isEntering ? "#5a6beb" : "#6576FF";
   };
 
-  const handleSocialLogin = (
-    provider: "facebook" | "google" | "apple"
-  ): void => {
-    console.log(`Login with ${provider}`);
-    // Implement social login logic here
-  };
-
   const handleForgotPassword = (): void => {
     router.push("/forgot-password");
   };

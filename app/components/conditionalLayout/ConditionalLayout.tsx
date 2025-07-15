@@ -14,8 +14,9 @@ export default function ConditionalLayout({
   // Check if current route is dashboard or any dashboard subroute
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isUserConfigRoute = pathname === "/user-configuration";
+  const isInterview = pathname === "/interview";
 
-  if (isDashboardRoute || isUserConfigRoute) {
+  if (isDashboardRoute || isUserConfigRoute || isInterview) {
     // For dashboard routes, render children without navbar/footer
     return <>{children}</>;
   }

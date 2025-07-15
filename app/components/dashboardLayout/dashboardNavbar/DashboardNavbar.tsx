@@ -72,21 +72,6 @@ export default function DashboardNavbar() {
           </div>
         </div>
 
-        {/* Center - Search (hidden on mobile) */}
-        <div className="hidden md:flex flex-1 max-w-md mx-8">
-          <div className="relative w-full">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              placeholder="Search interviews, tips..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            />
-          </div>
-        </div>
-
         {/* Right side actions */}
         <div className="flex items-center space-x-2 sm:space-x-4">
           {/* Mobile search button */}

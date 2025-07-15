@@ -2,17 +2,9 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Calendar,
-  Clock,
-  Star,
-  ArrowRight,
-  Lightbulb,
-  TrendingUp,
-  Target,
-  Award,
-} from "lucide-react";
+import { Calendar, Clock, Star, ArrowRight, TrendingUp } from "lucide-react";
 import StartInterviewModal from "../components/startInterviewModal/StartInterviewModal";
+import Image from "next/image";
 
 export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,127 +48,75 @@ export default function DashboardPage() {
     "Click below to start your first mock session with our AI Interviewer.",
   ];
 
-  const stats = [
-    {
-      title: "Total Interviews",
-      value: "12",
-      change: "+2.5%",
-      changeType: "positive" as const,
-      icon: Target,
-    },
-    {
-      title: "Average Score",
-      value: "82%",
-      change: "+5.2%",
-      changeType: "positive" as const,
-      icon: TrendingUp,
-    },
-    {
-      title: "Success Rate",
-      value: "85%",
-      change: "+12%",
-      changeType: "positive" as const,
-      icon: Award,
-    },
-  ];
-
   return (
     <>
       <div className="space-y-6 sm:space-y-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={index}
-                className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      {stat.title}
-                    </p>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">
-                      {stat.value}
-                    </p>
-                    <div
-                      className={`
-                      flex items-center mt-2 text-sm
-                      ${
-                        stat.changeType === "positive"
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }
-                    `}
-                    >
-                      <TrendingUp size={14} className="mr-1" />
-                      <span>{stat.change}</span>
-                      <span className="text-gray-500 ml-1">
-                        from last month
-                      </span>
+        {/* Interview Tips Card */}
+        <div
+          className="rounded-xl p-6 sm:p-8 text-white relative overflow-hidden"
+          style={{
+            backgroundColor: "#1B1B3B",
+            fontFamily: "Plus Jakarta Sans, sans-serif",
+          }}
+        >
+          <div className="relative z-10">
+            <div className="flex items-start justify-between mb-4 sm:mb-6">
+              <div className="flex-1">
+                <div className="flex items-center mb-4 sm:mb-6">
+                  <h2 className="text-[36px] sm:text-2xl font-bold">
+                    Today&apos;s Interview Tips 💡
+                  </h2>
+                </div>
+
+                <div className="space-y-3 sm:space-y-4">
+                  {interviewTips.map((tip, index) => (
+                    <div key={index} className="flex items-start">
+                      <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 mr-3 sm:mr-4 flex-shrink-0"></div>
+                      <p className="text-sm sm:text-base leading-relaxed">
+                        {tip}
+                      </p>
                     </div>
-                  </div>
-                  <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <Icon size={24} className="text-blue-600" />
-                  </div>
+                  ))}
                 </div>
               </div>
-            );
-          })}
-        </div>
 
-        {/* Interview Tips Card */}
-        <div className="bg-gradient-to-r from-indigo-900 via-purple-900 to-pink-900 rounded-xl p-6 sm:p-8 text-white relative overflow-hidden">
-          <div className="relative z-10">
-            <div className="flex items-center mb-4 sm:mb-6">
-              <Lightbulb className="w-6 h-6 mr-3 text-yellow-400 flex-shrink-0" />
-              <h2 className="text-xl sm:text-2xl font-bold">
-                Today's Interview Tips
-              </h2>
-            </div>
-            <div className="space-y-3 sm:space-y-4">
-              {interviewTips.map((tip, index) => (
-                <div key={index} className="flex items-start">
-                  <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 mr-3 sm:mr-4 flex-shrink-0"></div>
-                  <p className="text-sm sm:text-base leading-relaxed">{tip}</p>
-                </div>
-              ))}
+              {/* Bulb Image */}
+              <div className="hidden sm:block ml-8">
+                <Image
+                  src="/assets/bulb.png"
+                  alt="Light bulb"
+                  width={180}
+                  height={180}
+                  className="opacity-90"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Decorative elements */}
-          <div className="absolute top-4 right-4 sm:top-8 sm:right-8 opacity-10">
-            <div className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-full"></div>
-          </div>
-          <div className="absolute -bottom-6 -right-6 sm:-bottom-8 sm:-right-8 opacity-5">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-full"></div>
-          </div>
-          <div className="absolute top-1/2 left-8 opacity-5">
-            <div className="w-16 h-16 border-2 border-white rounded-full"></div>
+          <div className="absolute top-4 right-4 sm:hidden">
+            <Image
+              src="/assets/bulb.png"
+              alt="Light bulb"
+              width={50}
+              height={50}
+              className="opacity-70"
+            />
           </div>
         </div>
 
         {/* Main Interview Card */}
         <div className="bg-white rounded-xl p-6 sm:p-8 lg:p-12 shadow-sm border border-gray-200 relative overflow-hidden">
           {/* Background decorative elements */}
-          <div className="absolute inset-0 opacity-3">
-            <div className="absolute top-10 left-10 w-12 h-12 sm:w-16 sm:h-16 border-2 border-gray-300 rounded-full"></div>
-            <div className="absolute top-20 right-20 w-6 h-6 sm:w-8 sm:h-8 bg-gray-300 rounded-full"></div>
-            <div className="absolute bottom-10 left-20 w-8 h-8 sm:w-12 sm:h-12 border border-gray-300 rounded-lg rotate-45"></div>
-            <div className="absolute bottom-20 right-10 w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 rounded-lg"></div>
-            <div className="absolute top-1/3 right-1/4 w-4 h-4 sm:w-6 sm:h-6 border border-gray-300 rounded-full"></div>
-            <div className="absolute bottom-1/3 left-1/4 w-6 h-6 sm:w-8 sm:h-8 bg-gray-200 rounded-lg rotate-12"></div>
-          </div>
 
           <div className="relative z-10 text-center">
-            {/* Avatar */}
-            <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full mx-auto mb-4 sm:mb-6 flex items-center justify-center shadow-lg">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-white rounded-full flex items-center justify-center">
-                <span className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">
-                  AI
-                </span>
-              </div>
+            <div className="flex justify-center">
+              <Image
+                src="/assets/avatar.png"
+                alt="Light bulb"
+                width={80}
+                height={80}
+                className="object-cover  mb-4 sm:mb-6"
+              />
             </div>
 
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
