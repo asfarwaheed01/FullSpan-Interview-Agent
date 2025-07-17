@@ -4,6 +4,7 @@ import "./globals.css";
 import { ToastContainer } from "react-toastify";
 import { AuthProvider } from "./contexts/AuthContext";
 import ConditionalLayout from "./components/conditionalLayout/ConditionalLayout";
+import { InterviewProvider } from "./contexts/InterviewContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,8 +32,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <ToastContainer />
-          <ConditionalLayout>{children}</ConditionalLayout>
+          <InterviewProvider>
+            <ToastContainer />
+            <ConditionalLayout>{children}</ConditionalLayout>
+          </InterviewProvider>
         </AuthProvider>
       </body>
     </html>

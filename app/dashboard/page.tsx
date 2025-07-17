@@ -1,52 +1,64 @@
-// app/dashboard/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Calendar, Clock, Star, ArrowRight, TrendingUp } from "lucide-react";
 import StartInterviewModal from "../components/startInterviewModal/StartInterviewModal";
 import Image from "next/image";
+import { useInterviews } from "../contexts/InterviewContext";
+import { getToken } from "../utils/constants";
 
 export default function DashboardPage() {
+  const token = getToken();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
+  const { interviews, loading, error, fetchInterviews } = useInterviews();
 
-  const recentInterviews = [
-    {
-      id: 1,
-      title: "Full Stack Developer",
-      company: "Stellar Tech Solutions",
-      date: "15-6-2025",
-      duration: "15 min",
-      score: 82,
-      status: "Excellent",
-      statusColor: "text-green-600 bg-green-50 border-green-200",
-    },
-    {
-      id: 2,
-      title: "UI UX Designer",
-      company: "Zee Frames",
-      date: "14-6-2025",
-      duration: "30 min",
-      score: 75,
-      status: "Good",
-      statusColor: "text-yellow-600 bg-yellow-50 border-yellow-200",
-    },
-    {
-      id: 3,
-      title: "UI UX Designer",
-      company: "Zee Frames",
-      date: "25-6-2025",
-      duration: "45 min",
-      score: 90,
-      status: "Excellent",
-      statusColor: "text-green-600 bg-green-50 border-green-200",
-    },
-  ];
+  // Fetch interviews on component mount
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+    fetchInterviews(1);
+  }, [token]);
+
+  // Get recent interviews (first 3)
+  const recentInterviews = interviews.slice(0, 3);
 
   const interviewTips = [
     "Practice the STAR method (Situation, Task, Action, Result) for behavioral questions",
     "Click below to start your first mock session with our AI Interviewer.",
     "Click below to start your first mock session with our AI Interviewer.",
   ];
+
+  // Function to get status color based on score or status
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "text-green-600 bg-green-50 border-green-200";
+      case "in_progress":
+        return "text-blue-600 bg-blue-50 border-blue-200";
+      case "pending":
+        return "text-yellow-600 bg-yellow-50 border-yellow-200";
+      default:
+        return "text-gray-600 bg-gray-50 border-gray-200";
+    }
+  };
+
+  // Function to format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  // Function to handle view all interviews
+  const handleViewAllInterviews = () => {
+    router.push("/dashboard/recent");
+  };
 
   return (
     <>
@@ -106,8 +118,6 @@ export default function DashboardPage() {
 
         {/* Main Interview Card */}
         <div className="bg-white rounded-xl p-6 sm:p-8 lg:p-12 shadow-sm border border-gray-200 relative overflow-hidden">
-          {/* Background decorative elements */}
-
           <div className="relative z-10 text-center">
             <div className="flex justify-center">
               <Image
@@ -150,61 +160,91 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="space-y-3 sm:space-y-4">
-            {recentInterviews.map((interview) => (
-              <div
-                key={interview.id}
-                className="border border-gray-200 rounded-lg p-4 sm:p-5 hover:shadow-md transition-all duration-200 hover:border-gray-300"
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-500 mt-2">Loading interviews...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-red-500">{error}</p>
+              <button
+                onClick={() => fetchInterviews(1)}
+                className="mt-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 sm:mb-3 space-y-2 sm:space-y-0">
-                      <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                        {interview.title}
-                      </h4>
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${interview.statusColor}`}
-                        >
-                          {interview.status}
-                        </span>
-                        <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
+                Try Again
+              </button>
+            </div>
+          ) : recentInterviews.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">
+                No interviews found. Start your first interview!
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 sm:space-y-4">
+              {recentInterviews.map((interview) => (
+                <div
+                  key={interview._id}
+                  className="border border-gray-200 rounded-lg p-4 sm:p-5 hover:shadow-md transition-all duration-200 hover:border-gray-300"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 sm:mb-3 space-y-2 sm:space-y-0">
+                        <h4 className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                          {interview.occupation_name}
+                        </h4>
+                        <div className="flex items-center space-x-2">
+                          <span
+                            className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                              interview.status
+                            )}`}
+                          >
+                            {interview.status}
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    <p className="text-xs sm:text-sm text-gray-600 mb-3">
-                      at {interview.company}
-                    </p>
+                      <p className="text-xs sm:text-sm text-gray-600 mb-3">
+                        {interview.candidate_name} at{" "}
+                        {interview.company_details}
+                      </p>
 
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-gray-500">
-                      <div className="flex items-center">
-                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
-                        <span className="whitespace-nowrap">
-                          {interview.date}
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
-                        <span className="whitespace-nowrap">
-                          {interview.duration}
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
-                        <span className="whitespace-nowrap">
-                          {interview.score}% score
-                        </span>
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-gray-500">
+                        <div className="flex items-center">
+                          <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
+                          <span className="whitespace-nowrap">
+                            {formatDate(interview.started_at)}
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
+                          <span className="whitespace-nowrap">
+                            {interview.actual_duration
+                              ? `${interview.actual_duration} min`
+                              : interview.duration}
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
+                          <span className="whitespace-nowrap">
+                            {interview.interview_type}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* View All Button */}
           <div className="mt-4 sm:mt-6 text-center">
-            <button className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors">
+            <button
+              onClick={handleViewAllInterviews}
+              className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+            >
               View All Interviews →
             </button>
           </div>

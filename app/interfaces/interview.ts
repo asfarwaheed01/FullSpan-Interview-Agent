@@ -62,3 +62,44 @@ export interface Participant {
 export interface TrackPublication {
   trackSid?: string;
 }
+
+export interface Interview {
+  _id: string;
+  candidate_name: string;
+  occupation_name: string;
+  company_details: string;
+  interview_type: string;
+  duration: string;
+  status: string;
+  started_at: string;
+  ended_at?: string;
+  actual_duration?: number;
+  createdAt: string;
+}
+
+export interface InterviewStats {
+  totalInterviews: number;
+  completedInterviews: number;
+  averageDuration: number;
+  statusBreakdown: {
+    [key: string]: number;
+  };
+}
+
+export interface ApiResponse {
+  success: boolean;
+  data: {
+    interviews: Interview[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+}
+
+export interface StatsResponse {
+  success: boolean;
+  data: InterviewStats;
+}
