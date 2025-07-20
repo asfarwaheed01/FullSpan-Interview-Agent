@@ -3,6 +3,7 @@
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useSidebar } from "@/app/dashboard/layout";
 import { Bell, Settings, User, ChevronDown, Menu, Search } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
@@ -219,30 +220,18 @@ export default function DashboardNavbar() {
                   </p>
                 </div>
                 <div className="p-2">
-                  <a
-                    href="#"
+                  <Link
+                    href="/dashboard/user-config"
                     className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                   >
                     Profile Settings
-                  </a>
-                  <a
-                    href="#"
+                  </Link>
+                  <Link
+                    href="/dashboard/payments"
                     className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                   >
                     Billing & Usage
-                  </a>
-                  <a
-                    href="#"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                  >
-                    Help & Support
-                  </a>
-                  <a
-                    href="#"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                  >
-                    Keyboard Shortcuts
-                  </a>
+                  </Link>
                 </div>
                 <div className="p-2 border-t border-gray-200">
                   <a
@@ -257,21 +246,6 @@ export default function DashboardNavbar() {
           </div>
         </div>
       </div>
-
-      {/* Mobile search bar */}
-      {/* <div className="md:hidden mt-4">
-        <div className="relative">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Search interviews, tips..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-          />
-        </div>
-      </div> */}
 
       <style jsx>{`
         @keyframes dropdown {

@@ -5,11 +5,10 @@
 //   Clock,
 //   Star,
 //   ArrowRight,
-//   Filter,
 //   Search,
-//   Download,
 //   Loader2,
 //   AlertCircle,
+//   FileText,
 // } from "lucide-react";
 // import { useEffect, useState } from "react";
 // import { getToken } from "@/app/utils/constants";
@@ -31,6 +30,7 @@
 //   const [dateFilter, setDateFilter] = useState("30");
 //   const [currentPage, setCurrentPage] = useState(1);
 //   const [totalPages, setTotalPages] = useState(1);
+//   const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null);
 
 //   const fetchInterviews = async (page = 1) => {
 //     try {
@@ -85,6 +85,40 @@
 //       setStats(data.data);
 //     } catch (error) {
 //       console.error("Error fetching stats:", error);
+//     }
+//   };
+
+//   // Function to generate and download feedback PDF
+//   const handleViewFeedback = async (interviewId: string) => {
+//     try {
+//       setGeneratingPdfId(interviewId);
+
+//       const response = await fetch(
+//         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/feedback/${interviewId}/pdf`,
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//           },
+//         }
+//       );
+
+//       if (!response.ok) {
+//         throw new Error("Failed to generate feedback PDF");
+//       }
+
+//       const data = await response.json();
+
+//       if (data.success && data.data.pdfUrl) {
+//         // Open PDF in new tab
+//         window.open(data.data.pdfUrl, "_blank");
+//       } else {
+//         throw new Error("Invalid response from server");
+//       }
+//     } catch (error) {
+//       console.error("Error generating feedback PDF:", error);
+//       alert("Failed to generate feedback PDF. Please try again.");
+//     } finally {
+//       setGeneratingPdfId(null);
 //     }
 //   };
 
@@ -149,34 +183,6 @@
 //     return matchesSearch;
 //   });
 
-//   const handleExport = async () => {
-//     try {
-//       // You can implement CSV export here
-//       const csvContent = [
-//         ["Date", "Role", "Company", "Duration", "Status"],
-//         ...filteredInterviews.map((interview) => [
-//           formatDate(interview.createdAt),
-//           interview.occupation_name,
-//           interview.company_details,
-//           `${interview.actual_duration || interview.duration} min`,
-//           getStatusDisplay(interview.status),
-//         ]),
-//       ]
-//         .map((row) => row.join(","))
-//         .join("\n");
-
-//       const blob = new Blob([csvContent], { type: "text/csv" });
-//       const url = window.URL.createObjectURL(blob);
-//       const a = document.createElement("a");
-//       a.href = url;
-//       a.download = "interviews.csv";
-//       a.click();
-//       window.URL.revokeObjectURL(url);
-//     } catch (error) {
-//       console.error("Export failed:", error);
-//     }
-//   };
-
 //   if (loading) {
 //     return (
 //       <div className="space-y-6">
@@ -226,21 +232,6 @@
 //             <p className="text-gray-600">
 //               Track your progress and review past performances
 //             </p>
-//           </div>
-
-//           {/* Action buttons */}
-//           <div className="flex flex-col sm:flex-row gap-3">
-//             <button
-//               onClick={handleExport}
-//               className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-//             >
-//               <Download size={16} className="mr-2" />
-//               Export
-//             </button>
-//             <button className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-//               <Filter size={16} className="mr-2" />
-//               Filter
-//             </button>
 //           </div>
 //         </div>
 
@@ -401,6 +392,31 @@
 //                         >
 //                           {getStatusDisplay(interview.status)}
 //                         </span>
+
+//                         {/* Feedback Button - Only show for completed interviews */}
+//                         {interview.status.toLowerCase() === "completed" && (
+//                           <button
+//                             onClick={(e) => {
+//                               e.stopPropagation();
+//                               handleViewFeedback(interview._id);
+//                             }}
+//                             disabled={generatingPdfId === interview._id}
+//                             className="flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+//                           >
+//                             {generatingPdfId === interview._id ? (
+//                               <>
+//                                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+//                                 Generating...
+//                               </>
+//                             ) : (
+//                               <>
+//                                 <FileText className="w-3 h-3 mr-1" />
+//                                 View Feedback
+//                               </>
+//                             )}
+//                           </button>
+//                         )}
+
 //                         <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
 //                       </div>
 //                     </div>
@@ -487,9 +503,7 @@ import {
   Clock,
   Star,
   ArrowRight,
-  Filter,
   Search,
-  Download,
   Loader2,
   AlertCircle,
   FileText,
@@ -502,6 +516,7 @@ import {
   InterviewStats,
   StatsResponse,
 } from "@/app/interfaces/interview";
+import FeedbackTimer from "@/app/components/InterviewPage/FeedbackTimer";
 
 export default function RecentInterviewsPage() {
   const token = getToken();
@@ -515,6 +530,9 @@ export default function RecentInterviewsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null);
+  const [timerCompletedInterviews, setTimerCompletedInterviews] = useState<
+    Set<string>
+  >(new Set());
 
   const fetchInterviews = async (page = 1) => {
     try {
@@ -570,6 +588,29 @@ export default function RecentInterviewsPage() {
     } catch (error) {
       console.error("Error fetching stats:", error);
     }
+  };
+
+  // Function to check if feedback is available (2 minutes after interview ended)
+  const isFeedbackAvailable = (interview: Interview): boolean => {
+    if (interview.status.toLowerCase() !== "completed" || !interview.ended_at) {
+      return false;
+    }
+
+    // Check if timer was manually completed
+    if (timerCompletedInterviews.has(interview._id)) {
+      return true;
+    }
+
+    const endTime = new Date(interview.ended_at).getTime();
+    const currentTime = new Date().getTime();
+    const twoMinutesInMs = 2 * 60 * 1000; // 2 minutes
+
+    return currentTime - endTime >= twoMinutesInMs;
+  };
+
+  // Function to handle timer completion
+  const handleTimerComplete = (interviewId: string) => {
+    setTimerCompletedInterviews((prev) => new Set([...prev, interviewId]));
   };
 
   // Function to generate and download feedback PDF
@@ -667,34 +708,6 @@ export default function RecentInterviewsPage() {
     return matchesSearch;
   });
 
-  const handleExport = async () => {
-    try {
-      // You can implement CSV export here
-      const csvContent = [
-        ["Date", "Role", "Company", "Duration", "Status"],
-        ...filteredInterviews.map((interview) => [
-          formatDate(interview.createdAt),
-          interview.occupation_name,
-          interview.company_details,
-          `${interview.actual_duration || interview.duration} min`,
-          getStatusDisplay(interview.status),
-        ]),
-      ]
-        .map((row) => row.join(","))
-        .join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "interviews.csv";
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Export failed:", error);
-    }
-  };
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -744,21 +757,6 @@ export default function RecentInterviewsPage() {
             <p className="text-gray-600">
               Track your progress and review past performances
             </p>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={handleExport}
-              className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-            >
-              <Download size={16} className="mr-2" />
-              Export
-            </button>
-            <button className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-              <Filter size={16} className="mr-2" />
-              Filter
-            </button>
           </div>
         </div>
 
@@ -920,28 +918,41 @@ export default function RecentInterviewsPage() {
                           {getStatusDisplay(interview.status)}
                         </span>
 
-                        {/* Feedback Button - Only show for completed interviews */}
+                        {/* Feedback Button or Timer - Only show for completed interviews */}
                         {interview.status.toLowerCase() === "completed" && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewFeedback(interview._id);
-                            }}
-                            disabled={generatingPdfId === interview._id}
-                            className="flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            {generatingPdfId === interview._id ? (
-                              <>
-                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                Generating...
-                              </>
+                          <>
+                            {isFeedbackAvailable(interview) ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewFeedback(interview._id);
+                                }}
+                                disabled={generatingPdfId === interview._id}
+                                className="flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              >
+                                {generatingPdfId === interview._id ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                    Generating...
+                                  </>
+                                ) : (
+                                  <>
+                                    <FileText className="w-3 h-3 mr-1" />
+                                    View Feedback
+                                  </>
+                                )}
+                              </button>
                             ) : (
-                              <>
-                                <FileText className="w-3 h-3 mr-1" />
-                                View Feedback
-                              </>
+                              interview.ended_at && (
+                                <FeedbackTimer
+                                  endedAt={interview.ended_at}
+                                  onTimerComplete={() =>
+                                    handleTimerComplete(interview._id)
+                                  }
+                                />
+                              )
                             )}
-                          </button>
+                          </>
                         )}
 
                         <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />

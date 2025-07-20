@@ -8,7 +8,6 @@ import {
   Clock,
   Settings,
   X,
-  Crown,
   AlignJustify,
 } from "lucide-react";
 import { useSidebar } from "@/app/dashboard/layout";
@@ -26,7 +25,7 @@ const sidebarItems = [
   },
   {
     name: "Settings",
-    href: "/dashboard/settings",
+    href: "/dashboard/user-config",
     icon: Settings,
   },
 ];
@@ -189,54 +188,6 @@ export default function DashboardSidebar() {
             );
           })}
         </nav>
-
-        {/* Upgrade section */}
-        <div className={`p-4 ${isCollapsed ? "px-2" : ""}`}>
-          <div
-            className={`
-            bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg text-white
-            transition-all duration-300 overflow-hidden
-            ${isCollapsed ? "p-2" : "p-4"}
-          `}
-          >
-            {!isCollapsed ? (
-              <div className="transition-all duration-300">
-                <h3 className="font-semibold text-sm mb-3">
-                  Upgrade Your Account for full Access
-                </h3>
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center group">
-                  <Crown
-                    size={16}
-                    className="mr-2 group-hover:transform group-hover:-translate-y-0.5 transition-transform"
-                  />
-                  Upgrade
-                </button>
-              </div>
-            ) : (
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors duration-200 flex items-center justify-center group relative">
-                <Crown
-                  size={16}
-                  className="group-hover:transform group-hover:-translate-y-0.5 transition-transform"
-                />
-
-                {/* Tooltip for collapsed upgrade button */}
-                <div
-                  className="
-                  absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg
-                  opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                  transition-all duration-200 z-50 whitespace-nowrap
-                "
-                >
-                  Upgrade Account
-                  <div
-                    className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 
-                    border-4 border-transparent border-r-gray-900"
-                  />
-                </div>
-              </button>
-            )}
-          </div>
-        </div>
       </div>
     </>
   );

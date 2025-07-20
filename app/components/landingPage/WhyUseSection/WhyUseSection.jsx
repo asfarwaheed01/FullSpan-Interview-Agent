@@ -24,7 +24,10 @@ export default function WhyUseSection() {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
+    <section
+      className="py-20 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden"
+      id="whyuse"
+    >
       {/* Background decorative elements */}
       <div className="absolute top-0 left-0 w-full h-full">
         <div className="absolute top-20 left-10 w-32 h-32 bg-purple-100 rounded-full blur-3xl opacity-50"></div>

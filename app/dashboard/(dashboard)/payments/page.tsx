@@ -10,15 +10,14 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
+  Star,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
-import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 import { toast } from "react-toastify";
+import { getToken } from "@/app/utils/constants";
+import ConfirmationModal from "@/app/components/ConfirmationModal/ConfirmationModal";
+import StripeCardForm from "@/app/components/StripeCardForm/StripeCardForm";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -33,152 +32,28 @@ interface PaymentMethod {
   isDefault: boolean;
 }
 
-const AddCardForm = ({ onCardAdded }: { onCardAdded: () => void }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const cardElement = elements.getElement(CardElement);
-
-      if (!cardElement) {
-        setError("Card element not found");
-        setLoading(false);
-        return;
-      }
-
-      // Create payment method
-      const { error: stripeError, paymentMethod } =
-        await stripe.createPaymentMethod({
-          type: "card",
-          card: cardElement,
-        });
-
-      if (stripeError) {
-        setError(stripeError.message || "An error occurred");
-        setLoading(false);
-        return;
-      }
-
-      // Save payment method to backend
-      const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
-        }/api/payments/add-payment-method`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({
-            paymentMethodId: paymentMethod.id,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to save payment method");
-      }
-
-      // Success
-      toast.success("Payment method added successfully!");
-      onCardAdded();
-
-      // Clear the form
-      cardElement.clear();
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to add payment method";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const cardElementOptions = {
-    style: {
-      base: {
-        fontSize: "16px",
-        color: "#424770",
-        "::placeholder": {
-          color: "#aab7c4",
-        },
-        padding: "12px",
-      },
-      invalid: {
-        color: "#9e2146",
-      },
-    },
-    hidePostalCode: false,
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Card Information
-        </label>
-        <div className="border border-gray-300 rounded-lg p-4 bg-white">
-          <CardElement options={cardElementOptions} />
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={!stripe || loading}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Adding Card...
-          </>
-        ) : (
-          <>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Payment Method
-          </>
-        )}
-      </button>
-    </form>
-  );
-};
-
 const PaymentsPage = () => {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddCard, setShowAddCard] = useState(false);
   const [deletingCard, setDeletingCard] = useState<string | null>(null);
+  const [settingDefault, setSettingDefault] = useState<string | null>(null);
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   const fetchPaymentMethods = async () => {
     try {
       const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
-        }/api/payments/methods`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/payments/methods`,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${getToken()}`,
           },
         }
       );
@@ -186,6 +61,10 @@ const PaymentsPage = () => {
       if (response.ok) {
         const data = await response.json();
         setPaymentMethods(data.data.paymentMethods || []);
+      } else {
+        const errorData = await response.json();
+        console.error("Error fetching payment methods:", errorData);
+        toast.error("Failed to load payment methods");
       }
     } catch (error) {
       console.error("Error fetching payment methods:", error);
@@ -196,40 +75,84 @@ const PaymentsPage = () => {
   };
 
   const handleDeleteCard = async (paymentMethodId: string) => {
-    if (!confirm("Are you sure you want to remove this payment method?")) {
-      return;
-    }
+    const cardToDelete = paymentMethods.find(
+      (method) => method.id === paymentMethodId
+    );
+    const cardDisplay = cardToDelete
+      ? `${cardToDelete.brand} •••• ${cardToDelete.last4}`
+      : "this payment method";
 
-    setDeletingCard(paymentMethodId);
+    setConfirmModal({
+      isOpen: true,
+      title: "Remove Payment Method",
+      message: `Are you sure you want to remove ${cardDisplay}? This action cannot be undone.`,
+      onConfirm: async () => {
+        setDeletingCard(paymentMethodId);
+
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/payments/methods/${paymentMethodId}`,
+            {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${getToken()}`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            toast.success("Payment method removed successfully");
+            fetchPaymentMethods();
+          } else {
+            const data = await response.json();
+            throw new Error(data.message || "Failed to remove payment method");
+          }
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to remove payment method";
+          toast.error(errorMessage);
+        } finally {
+          setDeletingCard(null);
+        }
+      },
+    });
+  };
+
+  const handleSetDefault = async (paymentMethodId: string) => {
+    setSettingDefault(paymentMethodId);
 
     try {
       const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
-        }/api/payments/methods/${paymentMethodId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/payments/default`,
         {
-          method: "DELETE",
+          method: "PUT",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getToken()}`,
           },
+          body: JSON.stringify({
+            paymentMethodId,
+          }),
         }
       );
 
       if (response.ok) {
-        toast.success("Payment method removed successfully");
+        toast.success("Default payment method updated");
         fetchPaymentMethods();
       } else {
         const data = await response.json();
-        throw new Error(data.message || "Failed to remove payment method");
+        throw new Error(data.message || "Failed to set default payment method");
       }
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Failed to remove payment method";
+          : "Failed to set default payment method";
       toast.error(errorMessage);
     } finally {
-      setDeletingCard(null);
+      setSettingDefault(null);
     }
   };
 
@@ -249,6 +172,10 @@ const PaymentsPage = () => {
       default:
         return "💳";
     }
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
   };
 
   useEffect(() => {
@@ -345,17 +272,38 @@ const PaymentsPage = () => {
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDeleteCard(method.id)}
-                      disabled={deletingCard === method.id}
-                      className="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
-                    >
-                      {deletingCard === method.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
+                    <div className="flex items-center space-x-2">
+                      {/* Set as Default Button */}
+                      {!method.isDefault && (
+                        <button
+                          onClick={() => handleSetDefault(method.id)}
+                          disabled={settingDefault === method.id}
+                          className="text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 text-xs font-medium"
+                        >
+                          {settingDefault === method.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <div className="flex items-center">
+                              <Star className="w-3 h-3 mr-1" />
+                              Set Default
+                            </div>
+                          )}
+                        </button>
                       )}
-                    </button>
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDeleteCard(method.id)}
+                        disabled={deletingCard === method.id}
+                        className="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                      >
+                        {deletingCard === method.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -387,11 +335,11 @@ const PaymentsPage = () => {
                     Add New Payment Method
                   </h3>
                   <Elements stripe={stripePromise}>
-                    <AddCardForm onCardAdded={handleCardAdded} />
+                    <StripeCardForm onCardAdded={handleCardAdded} />
                   </Elements>
                   <button
                     onClick={() => setShowAddCard(false)}
-                    className="mt-3 text-gray-600 hover:text-gray-700 text-sm"
+                    className="mt-4 text-gray-600 hover:text-gray-700 text-sm font-medium"
                   >
                     Cancel
                   </button>
@@ -435,6 +383,18 @@ const PaymentsPage = () => {
             <span>Powered by Stripe • Secure & PCI Compliant</span>
           </div>
         </div>
+
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={confirmModal.isOpen}
+          onClose={closeConfirmModal}
+          onConfirm={confirmModal.onConfirm}
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmText="Remove"
+          cancelText="Cancel"
+          isDestructive={true}
+        />
       </div>
     </div>
   );

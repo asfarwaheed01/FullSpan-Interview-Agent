@@ -9,60 +9,17 @@ import React, {
   useEffect,
 } from "react";
 import { getToken } from "../utils/constants";
+import {
+  ApiResponse,
+  Interview,
+  InterviewContextType,
+  Pagination,
+} from "../interfaces/interview";
 
-// Types
-interface Interview {
-  _id: string;
-  candidate_name: string;
-  occupation_name: string;
-  company_details: string;
-  interview_type: string;
-  duration: string;
-  status: string;
-  started_at: string;
-  ended_at?: string;
-  actual_duration?: number;
-  createdAt: string;
-}
-
-interface Pagination {
-  page: number;
-  pages: number;
-  total: number;
-  limit: number;
-}
-
-interface ApiResponse {
-  success: boolean;
-  data: {
-    interviews: Interview[];
-    pagination: Pagination;
-  };
-}
-
-interface InterviewContextType {
-  // State
-  interviews: Interview[];
-  currentPage: number;
-  totalPages: number;
-  loading: boolean;
-  error: string | null;
-  statusFilter: string;
-
-  // Actions
-  fetchInterviews: (page?: number) => Promise<void>;
-  setStatusFilter: (status: string) => void;
-  setError: (error: string | null) => void;
-  clearError: () => void;
-  refreshInterviews: () => Promise<void>;
-}
-
-// Create context
 const InterviewContext = createContext<InterviewContextType | undefined>(
   undefined
 );
 
-// Provider component
 interface InterviewProviderProps {
   children: ReactNode;
 }
@@ -70,7 +27,6 @@ interface InterviewProviderProps {
 export const InterviewProvider: React.FC<InterviewProviderProps> = ({
   children,
 }) => {
-  // State
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
@@ -79,18 +35,15 @@ export const InterviewProvider: React.FC<InterviewProviderProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isClient, setIsClient] = useState<boolean>(false);
 
-  // Set client-side flag after hydration
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Get token dynamically on each request
   const getCurrentToken = useCallback(() => {
     if (!isClient) return null;
     return getToken();
   }, [isClient]);
 
-  // Fetch interviews function
   const fetchInterviews = useCallback(
     async (page: number = 1) => {
       const token = getCurrentToken();
@@ -147,19 +100,15 @@ export const InterviewProvider: React.FC<InterviewProviderProps> = ({
     [statusFilter, getCurrentToken]
   );
 
-  // Refresh interviews (refetch current page)
   const refreshInterviews = useCallback(async () => {
     await fetchInterviews(currentPage);
   }, [fetchInterviews, currentPage]);
 
-  // Clear error
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
-  // Context value
   const value: InterviewContextType = {
-    // State
     interviews,
     currentPage,
     totalPages,

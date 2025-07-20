@@ -103,3 +103,27 @@ export interface StatsResponse {
   success: boolean;
   data: InterviewStats;
 }
+
+export interface Pagination {
+  page: number;
+  pages: number;
+  total: number;
+  limit: number;
+}
+
+export interface InterviewContextType {
+  // State
+  interviews: Interview[];
+  currentPage: number;
+  totalPages: number;
+  loading: boolean;
+  error: string | null;
+  statusFilter: string;
+
+  // Actions
+  fetchInterviews: (page?: number) => Promise<void>;
+  setStatusFilter: (status: string) => void;
+  setError: (error: string | null) => void;
+  clearError: () => void;
+  refreshInterviews: () => Promise<void>;
+}
