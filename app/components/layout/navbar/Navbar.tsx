@@ -229,7 +229,7 @@ const Navbar = () => {
           <div className="flex-shrink-0">
             <Link href={"/"}>
               <Image
-                src={"/assets/intervia-logo.svg"}
+                src={"/assets/Intervia-logo.svg"}
                 alt="Logo"
                 width={"120"}
                 height={"120"}
