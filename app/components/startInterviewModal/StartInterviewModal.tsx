@@ -1,19 +1,15 @@
-// components/dashboard/StartInterviewModal.tsx
 "use client";
 
 import { useState } from "react";
-import {
-  X,
-  User,
-  Calendar,
-  Upload,
-  FileText,
-  MapPin,
-  Zap,
-  Loader2,
-} from "lucide-react";
+import { X, Loader2, Calendar } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getToken } from "@/app/utils/constants";
+import InterviewTypeSelector from "./InterviewTypeSelector";
+import GeneralRoleSetup from "./GeneralRoleSetup";
+import UpcomingJobSetup from "./UpcomingJobSetup";
+import AIEmergingCareersSetup from "./AIEmergingCareersSetup";
+import CommonFormFields from "./CommonFormFields";
+import { RecommendationOccupation } from "@/app/interfaces/interview";
 
 interface StartInterviewModalProps {
   isOpen: boolean;
@@ -38,13 +34,39 @@ interface InterviewResponse {
   };
 }
 
+export type InterviewType = "general" | "upcoming" | "ai-careers";
+
+export interface GeneralFormData {
+  occupationName: string;
+  language: string;
+  interviewFocus: string;
+  duration: string;
+  additionalFocusAreas: string;
+}
+
+export interface UpcomingFormData {
+  jobDescription: string;
+  companyDetails: string;
+  language: string;
+  interviewFocus: string;
+  duration: string;
+  jobLocation: string;
+}
+
+export interface AIFormData {
+  selectedOccupation: string;
+  recommendedOccupations: RecommendationOccupation[];
+  language: string;
+  interviewFocus: string;
+  duration: string;
+  additionalFocusAreas: string;
+}
+
 export default function StartInterviewModal({
   isOpen,
   onClose,
 }: StartInterviewModalProps) {
-  const [selectedType, setSelectedType] = useState<
-    "general" | "upcoming" | "upskill"
-  >("general");
+  const [selectedType, setSelectedType] = useState<InterviewType>("general");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | React.ReactNode | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -53,8 +75,8 @@ export default function StartInterviewModal({
   const token = getToken();
   const router = useRouter();
 
-  // Form data for General Role Practice and Upskill Interview
-  const [generalFormData, setGeneralFormData] = useState({
+  // Form data states
+  const [generalFormData, setGeneralFormData] = useState<GeneralFormData>({
     occupationName: "",
     language: "English",
     interviewFocus: "One interview focus (Default)",
@@ -62,8 +84,7 @@ export default function StartInterviewModal({
     additionalFocusAreas: "",
   });
 
-  // Form data for Upcoming Job Interview
-  const [upcomingFormData, setUpcomingFormData] = useState({
+  const [upcomingFormData, setUpcomingFormData] = useState<UpcomingFormData>({
     jobDescription: "",
     companyDetails: "",
     language: "English",
@@ -72,10 +93,18 @@ export default function StartInterviewModal({
     jobLocation: "Calgary, 7th Road",
   });
 
+  const [aiFormData, setAIFormData] = useState<AIFormData>({
+    selectedOccupation: "",
+    recommendedOccupations: [] as RecommendationOccupation[],
+    language: "English",
+    interviewFocus: "One interview focus (Default)",
+    duration: "15",
+    additionalFocusAreas: "",
+  });
+
   const handleResumeUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Check file type
       const allowedTypes = [
         "application/pdf",
         "application/msword",
@@ -86,7 +115,6 @@ export default function StartInterviewModal({
         return;
       }
 
-      // Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         setError("File size must be less than 5MB");
         return;
@@ -114,21 +142,21 @@ export default function StartInterviewModal({
       "Strengths Based": "strengths_based_interview",
       "Values Based": "values_based_interview",
       "Stress Interview": "stress_interview",
-      "One interview focus (Default)": "technical_skills_interview", // Default for general
-      "For all interview": "behavioral_interview", // Default for upcoming
+      "One interview focus (Default)": "technical_skills_interview",
+      "For all interview": "behavioral_interview",
     };
 
     return focusMapping[displayValue] || "technical_skills_interview";
   };
 
-  const mapInterviewTypeToAPI = (type: string): string => {
+  const mapInterviewTypeToAPI = (type: InterviewType): string => {
     switch (type) {
       case "general":
         return "general";
       case "upcoming":
-        return "technical";
-      case "upskill":
-        return "behavioral";
+        return "job";
+      case "ai-careers":
+        return "general";
       default:
         return "general";
     }
@@ -139,65 +167,70 @@ export default function StartInterviewModal({
     return "mid";
   };
 
-  const mapInterviewStage = (type: string): string => {
-    switch (type) {
-      case "general":
-        return "Practice Round";
-      case "upcoming":
-        return "Job Interview";
-      case "upskill":
-        return "Skill Assessment";
-      default:
-        return "Practice Round";
-    }
-  };
+  const prepareAPIPayload = async () => {
+    let currentFormData;
+    let occupationName;
 
-  const prepareAPIPayload = () => {
+    const apiInterviewType = mapInterviewTypeToAPI(selectedType);
+
+    switch (selectedType) {
+      case "upcoming":
+        currentFormData = upcomingFormData;
+        occupationName = "Job Applicant";
+        break;
+      case "ai-careers":
+        currentFormData = aiFormData;
+        occupationName = aiFormData.selectedOccupation;
+        break;
+      default:
+        currentFormData = generalFormData;
+        occupationName = generalFormData.occupationName;
+    }
+
     const basePayload = {
-      interview_type: mapInterviewTypeToAPI(selectedType),
-      language:
-        selectedType === "upcoming"
-          ? upcomingFormData.language
-          : generalFormData.language,
-      duration:
-        selectedType === "upcoming"
-          ? upcomingFormData.duration
-          : generalFormData.duration,
-      interview_stage: mapInterviewStage(selectedType),
-      experience_level: mapExperienceLevel(
-        selectedType === "upcoming"
-          ? "Job Applicant"
-          : generalFormData.occupationName
-      ),
+      interview_type: apiInterviewType,
+      language: currentFormData.language,
+      duration: currentFormData.duration,
+      interview_focus: mapInterviewFocusToAPI(currentFormData.interviewFocus),
+      use_existing_resume: useExistingResume,
     };
 
-    if (selectedType === "upcoming") {
+    // Add fields based on interview type
+    if (apiInterviewType === "general") {
+      // For general interviews: include occupation_name and experience_level
       return {
         ...basePayload,
-        interview_focus: mapInterviewFocusToAPI(
-          upcomingFormData.interviewFocus
-        ),
-        job_description: upcomingFormData.jobDescription,
-        company_details:
-          upcomingFormData.companyDetails || "Company details not provided",
-        occupation_name: "Job Applicant",
+        occupation_name: occupationName,
+        experience_level: mapExperienceLevel(occupationName),
       };
     } else {
+      // For job type interviews: include job_description, company_details, interview_stage
+      let jobDescription = "";
+      let companyDetails = "";
+      let interviewStage = "";
+
+      if (selectedType === "upcoming") {
+        jobDescription = upcomingFormData.jobDescription;
+        companyDetails =
+          upcomingFormData.companyDetails || "Company details not provided";
+        interviewStage = "Job Interview";
+      } else if (selectedType === "ai-careers") {
+        jobDescription = `AI Emerging Careers interview for ${
+          aiFormData.selectedOccupation
+        } position. ${
+          aiFormData.additionalFocusAreas
+            ? `Focus areas: ${aiFormData.additionalFocusAreas}`
+            : ""
+        }`;
+        companyDetails = "AI Emerging Careers practice session";
+        interviewStage = "Skill Assessment";
+      }
+
       return {
         ...basePayload,
-        interview_focus: mapInterviewFocusToAPI(generalFormData.interviewFocus),
-        job_description: `Practice interview for ${
-          generalFormData.occupationName
-        } position. ${
-          generalFormData.additionalFocusAreas
-            ? `Focus areas: ${generalFormData.additionalFocusAreas}`
-            : ""
-        }`,
-        company_details:
-          selectedType === "upskill"
-            ? "Upskill interview practice session"
-            : "General role practice session",
-        occupation_name: generalFormData.occupationName,
+        job_description: jobDescription,
+        company_details: companyDetails,
+        interview_stage: interviewStage,
       };
     }
   };
@@ -213,23 +246,46 @@ export default function StartInterviewModal({
         if (!upcomingFormData.jobDescription.trim()) {
           throw new Error("Job description is required");
         }
+      } else if (selectedType === "ai-careers") {
+        if (!aiFormData.selectedOccupation) {
+          throw new Error("Please select an occupation");
+        }
       } else {
         if (!generalFormData.occupationName) {
           throw new Error("Occupation name is required");
         }
       }
 
-      const payload = prepareAPIPayload();
+      const payload = await prepareAPIPayload();
+      const formData = new FormData();
+
+      Object.keys(payload).forEach((key) => {
+        const value = payload[key as keyof typeof payload];
+        formData.append(key, String(value));
+      });
+
+      if (resumeFile) {
+        formData.append("cv_content", resumeFile);
+      }
+
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(
+            `${key}: File(${value.name}, ${value.size} bytes, ${value.type})`
+          );
+        } else {
+          console.log(`${key}: ${value}`);
+        }
+      }
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/interviews/start`,
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(payload),
+          body: formData,
         }
       );
 
@@ -255,7 +311,6 @@ export default function StartInterviewModal({
     } catch (error) {
       console.error("Error starting interview:", error);
 
-      // Check if it's a payment error
       const errorMessage =
         error instanceof Error ? error.message : "Failed to start interview";
 
@@ -263,7 +318,6 @@ export default function StartInterviewModal({
         errorMessage.includes("payment method") ||
         errorMessage.includes("Payment method")
       ) {
-        // Payment error - show error with payment link
         setError(
           <div className="flex items-center justify-between">
             <p className="mb-2">{errorMessage}</p>
@@ -279,7 +333,6 @@ export default function StartInterviewModal({
           </div>
         );
       } else {
-        // Regular error
         setError(errorMessage);
       }
     } finally {
@@ -319,591 +372,61 @@ export default function StartInterviewModal({
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Choose Interview Type */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Choose Interview Type
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* General Role Practice */}
-              <div
-                className={`
-                  border-2 rounded-lg p-4 cursor-pointer transition-all
-                  ${
-                    selectedType === "general"
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }
-                  ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
-                `}
-                onClick={() => !isLoading && setSelectedType("general")}
-              >
-                <div className="flex items-center mb-3">
-                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                    <User size={16} className="text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 text-sm">
-                      General Role Practice
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      Practice for a specific role
-                    </p>
-                  </div>
-                  <div
-                    className={`
-                    w-4 h-4 rounded-full border-2 flex items-center justify-center
-                    ${
-                      selectedType === "general"
-                        ? "border-blue-500"
-                        : "border-gray-300"
-                    }
-                  `}
-                  >
-                    {selectedType === "general" && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    )}
-                  </div>
-                </div>
-                <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• Role-specific question</li>
-                  <li>• Customizable by occupation</li>
-                  <li>• General interview preparation</li>
-                </ul>
-              </div>
+          {/* Interview Type Selector */}
+          <InterviewTypeSelector
+            selectedType={selectedType}
+            onTypeChange={setSelectedType}
+            isLoading={isLoading}
+          />
 
-              {/* Upcoming Job Interview */}
-              <div
-                className={`
-                  border-2 rounded-lg p-4 cursor-pointer transition-all
-                  ${
-                    selectedType === "upcoming"
-                      ? "border-green-500 bg-green-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }
-                  ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
-                `}
-                onClick={() => !isLoading && setSelectedType("upcoming")}
-              >
-                <div className="flex items-center mb-3">
-                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                    <Calendar size={16} className="text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 text-sm">
-                      Upcoming Job Interview
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      Prepare for a specific job application
-                    </p>
-                  </div>
-                  <div
-                    className={`
-                    w-4 h-4 rounded-full border-2 flex items-center justify-center
-                    ${
-                      selectedType === "upcoming"
-                        ? "border-green-500"
-                        : "border-gray-300"
-                    }
-                  `}
-                  >
-                    {selectedType === "upcoming" && (
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    )}
-                  </div>
-                </div>
-                <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• Role-specific question</li>
-                  <li>• Customizable by occupation</li>
-                  <li>• General interview preparation</li>
-                </ul>
-              </div>
-
-              {/* Upskill Interview */}
-              <div
-                className={`
-                  border-2 rounded-lg p-4 cursor-pointer transition-all
-                  ${
-                    selectedType === "upskill"
-                      ? "border-purple-500 bg-purple-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }
-                  ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
-                `}
-                onClick={() => !isLoading && setSelectedType("upskill")}
-              >
-                <div className="flex items-center mb-3">
-                  <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center mr-3">
-                    <Zap size={16} className="text-pink-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 text-sm">
-                      Upskill Interview
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      Prepare for a upcoming jobs
-                    </p>
-                  </div>
-                  <div
-                    className={`
-                    w-4 h-4 rounded-full border-2 flex items-center justify-center
-                    ${
-                      selectedType === "upskill"
-                        ? "border-purple-500"
-                        : "border-gray-300"
-                    }
-                  `}
-                  >
-                    {selectedType === "upskill" && (
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    )}
-                  </div>
-                </div>
-                <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• Role-Focused Questions</li>
-                  <li>• Occupation-Based Customization</li>
-                  <li>• Complete Interview Readiness</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* General Role Setup (for General and Upskill) */}
-          {(selectedType === "general" || selectedType === "upskill") && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {selectedType === "general"
-                  ? "General Role Setup"
-                  : "Upskill Interview Setup"}
-              </h3>
-
-              {/* Occupation Name */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Occupation Name <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={generalFormData.occupationName}
-                  onChange={(e) =>
-                    setGeneralFormData({
-                      ...generalFormData,
-                      occupationName: e.target.value,
-                    })
-                  }
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  disabled={isLoading}
-                  required
-                >
-                  <option value="">Select occupation</option>
-                  <option value="Software Developer">Software Developer</option>
-                  <option value="Data Scientist">Data Scientist</option>
-                  <option value="Product Manager">Product Manager</option>
-                  <option value="Marketing Manager">Marketing Manager</option>
-                  <option value="Business Analyst">Business Analyst</option>
-                  <option value="UX/UI Designer">UX/UI Designer</option>
-                  <option value="DevOps Engineer">DevOps Engineer</option>
-                  <option value="Sales Manager">Sales Manager</option>
-                </select>
-              </div>
-
-              {/* Resume Details */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Resume Details
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label
-                    className={`
-                    flex items-center justify-center p-3 border border-blue-200 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer disabled:opacity-50
-                    ${resumeFile ? "ring-2 ring-blue-500" : ""}
-                  `}
-                  >
-                    <Upload size={16} className="mr-2 text-blue-600" />
-                    <span className="text-sm text-blue-700">
-                      {resumeFile
-                        ? resumeFile.name.substring(0, 15) + "..."
-                        : "Upload Resume"}
-                    </span>
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      onChange={handleResumeUpload}
-                      className="hidden"
-                      disabled={isLoading}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleUseExistingResume}
-                    className={`
-                      flex items-center justify-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50
-                      ${
-                        useExistingResume
-                          ? "ring-2 ring-green-500 bg-green-50"
-                          : ""
-                      }
-                    `}
-                    disabled={isLoading}
-                  >
-                    <FileText
-                      size={16}
-                      className={`mr-2 ${
-                        useExistingResume ? "text-green-600" : "text-gray-500"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm ${
-                        useExistingResume ? "text-green-700" : "text-gray-600"
-                      }`}
-                    >
-                      Existing Resume
-                    </span>
-                  </button>
-                </div>
-                {resumeFile && (
-                  <p className="text-xs text-green-600 mt-2">
-                    ✓ {resumeFile.name} selected
-                  </p>
-                )}
-                {useExistingResume && (
-                  <p className="text-xs text-green-600 mt-2">
-                    ✓ Using existing resume from profile
-                  </p>
-                )}
-              </div>
-
-              {/* Additional Focus Areas (Optional) */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Additional Focus Areas{" "}
-                  <span className="text-gray-500">(Optional)</span>
-                </label>
-                <textarea
-                  value={generalFormData.additionalFocusAreas}
-                  onChange={(e) =>
-                    setGeneralFormData({
-                      ...generalFormData,
-                      additionalFocusAreas: e.target.value,
-                    })
-                  }
-                  placeholder="Any specific areas you'd like to focus on or provide a list of questions..."
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  rows={3}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+          {/* Dynamic Setup Components */}
+          {selectedType === "general" && (
+            <GeneralRoleSetup
+              formData={generalFormData}
+              onFormDataChange={setGeneralFormData}
+              resumeFile={resumeFile}
+              useExistingResume={useExistingResume}
+              onResumeUpload={handleResumeUpload}
+              onUseExistingResume={handleUseExistingResume}
+              isLoading={isLoading}
+            />
           )}
 
-          {/* Upcoming Job Interview Setup */}
           {selectedType === "upcoming" && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Upcoming Job Interview Setup
-              </h3>
+            <UpcomingJobSetup
+              formData={upcomingFormData}
+              onFormDataChange={setUpcomingFormData}
+              resumeFile={resumeFile}
+              useExistingResume={useExistingResume}
+              onResumeUpload={handleResumeUpload}
+              onUseExistingResume={handleUseExistingResume}
+              isLoading={isLoading}
+            />
+          )}
 
-              {/* Job Description */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Job Description <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={upcomingFormData.jobDescription}
-                  onChange={(e) =>
-                    setUpcomingFormData({
-                      ...upcomingFormData,
-                      jobDescription: e.target.value,
-                    })
-                  }
-                  placeholder="Paste the job description here..."
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  rows={3}
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-
-              {/* Company Details */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Detail{" "}
-                  <span className="text-gray-500">(Optional)</span>
-                </label>
-                <textarea
-                  value={upcomingFormData.companyDetails}
-                  onChange={(e) =>
-                    setUpcomingFormData({
-                      ...upcomingFormData,
-                      companyDetails: e.target.value,
-                    })
-                  }
-                  placeholder="Company mission, values, recent news, culture..."
-                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  rows={3}
-                  disabled={isLoading}
-                />
-              </div>
-
-              {/* Resume Details */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Resume Details
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label
-                    className={`
-                    flex items-center justify-center p-3 border border-blue-200 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer disabled:opacity-50
-                    ${resumeFile ? "ring-2 ring-blue-500" : ""}
-                  `}
-                  >
-                    <Upload size={16} className="mr-2 text-blue-600" />
-                    <span className="text-sm text-blue-700">
-                      {resumeFile
-                        ? resumeFile.name.substring(0, 15) + "..."
-                        : "Upload Resume"}
-                    </span>
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      onChange={handleResumeUpload}
-                      className="hidden"
-                      disabled={isLoading}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleUseExistingResume}
-                    className={`
-                      flex items-center justify-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50
-                      ${
-                        useExistingResume
-                          ? "ring-2 ring-green-500 bg-green-50"
-                          : ""
-                      }
-                    `}
-                    disabled={isLoading}
-                  >
-                    <FileText
-                      size={16}
-                      className={`mr-2 ${
-                        useExistingResume ? "text-green-600" : "text-gray-500"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm ${
-                        useExistingResume ? "text-green-700" : "text-gray-600"
-                      }`}
-                    >
-                      Existing Resume
-                    </span>
-                  </button>
-                </div>
-                {resumeFile && (
-                  <p className="text-xs text-green-600 mt-2">
-                    ✓ {resumeFile.name} selected
-                  </p>
-                )}
-                {useExistingResume && (
-                  <p className="text-xs text-green-600 mt-2">
-                    ✓ Using existing resume from profile
-                  </p>
-                )}
-              </div>
-            </div>
+          {selectedType === "ai-careers" && (
+            <AIEmergingCareersSetup
+              formData={aiFormData}
+              onFormDataChange={setAIFormData}
+              resumeFile={resumeFile}
+              useExistingResume={useExistingResume}
+              onResumeUpload={handleResumeUpload}
+              onUseExistingResume={handleUseExistingResume}
+              isLoading={isLoading}
+            />
           )}
 
           {/* Common Form Fields */}
-          <div className="space-y-4">
-            {/* Language */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Language
-              </label>
-              <select
-                value={
-                  selectedType === "upcoming"
-                    ? upcomingFormData.language
-                    : generalFormData.language
-                }
-                onChange={(e) => {
-                  if (selectedType === "upcoming") {
-                    setUpcomingFormData({
-                      ...upcomingFormData,
-                      language: e.target.value,
-                    });
-                  } else {
-                    setGeneralFormData({
-                      ...generalFormData,
-                      language: e.target.value,
-                    });
-                  }
-                }}
-                className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                disabled={isLoading}
-              >
-                <option>English</option>
-                <option>Spanish</option>
-                <option>French</option>
-                <option>German</option>
-              </select>
-            </div>
-
-            {/* Interview Focus */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Interview Focus
-              </label>
-              <select
-                value={
-                  selectedType === "upcoming"
-                    ? upcomingFormData.interviewFocus
-                    : generalFormData.interviewFocus
-                }
-                onChange={(e) => {
-                  if (selectedType === "upcoming") {
-                    setUpcomingFormData({
-                      ...upcomingFormData,
-                      interviewFocus: e.target.value,
-                    });
-                  } else {
-                    setGeneralFormData({
-                      ...generalFormData,
-                      interviewFocus: e.target.value,
-                    });
-                  }
-                }}
-                className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                disabled={isLoading}
-              >
-                {selectedType === "upcoming" ? (
-                  <>
-                    <option value="For all interview">For all interview</option>
-                    <option value="Technical Questions">
-                      Technical Questions
-                    </option>
-                    <option value="Behavioral Questions">
-                      Behavioral Questions
-                    </option>
-                    <option value="Case Studies">Case Studies</option>
-                    <option value="Competency Based">Competency Based</option>
-                    <option value="Situational Interview">
-                      Situational Interview
-                    </option>
-                    <option value="Motivational Interview">
-                      Motivational Interview
-                    </option>
-                    <option value="Strengths Based">Strengths Based</option>
-                    <option value="Values Based">Values Based</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="One interview focus (Default)">
-                      One interview focus (Default)
-                    </option>
-                    <option value="Technical Questions">
-                      Technical Questions
-                    </option>
-                    <option value="Behavioral Questions">
-                      Behavioral Questions
-                    </option>
-                    <option value="Case Studies">Case Studies</option>
-                    <option value="Competency Based">Competency Based</option>
-                    <option value="Situational Interview">
-                      Situational Interview
-                    </option>
-                    <option value="Motivational Interview">
-                      Motivational Interview
-                    </option>
-                    <option value="Strengths Based">Strengths Based</option>
-                    <option value="Values Based">Values Based</option>
-                    <option value="Stress Interview">Stress Interview</option>
-                  </>
-                )}
-              </select>
-            </div>
-
-            {/* Interview Duration */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Interview Duration
-              </label>
-              <div className="flex space-x-2">
-                {selectedType === "upcoming"
-                  ? ["15", "30", "45", "60"].map((duration) => (
-                      <button
-                        key={duration}
-                        type="button"
-                        onClick={() =>
-                          !isLoading &&
-                          setUpcomingFormData({ ...upcomingFormData, duration })
-                        }
-                        className={`
-                        flex-1 p-3 rounded-lg border-2 transition-all text-sm font-medium
-                        ${
-                          upcomingFormData.duration === duration
-                            ? "border-blue-500 bg-blue-50 text-blue-700"
-                            : "border-gray-200 hover:border-gray-300"
-                        }
-                        ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
-                      `}
-                        disabled={isLoading}
-                      >
-                        {duration} minutes
-                      </button>
-                    ))
-                  : ["15", "30"].map((duration) => (
-                      <button
-                        key={duration}
-                        type="button"
-                        onClick={() =>
-                          !isLoading &&
-                          setGeneralFormData({ ...generalFormData, duration })
-                        }
-                        className={`
-                        flex-1 p-3 rounded-lg border-2 transition-all text-sm font-medium
-                        ${
-                          generalFormData.duration === duration
-                            ? "border-blue-500 bg-blue-50 text-blue-700"
-                            : "border-gray-200 hover:border-gray-300"
-                        }
-                        ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
-                      `}
-                        disabled={isLoading}
-                      >
-                        {duration} minutes
-                      </button>
-                    ))}
-              </div>
-            </div>
-
-            {/* Job Location (only for Upcoming Job Interview) */}
-            {selectedType === "upcoming" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Job Location
-                </label>
-                <div className="relative">
-                  <MapPin
-                    size={16}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  />
-                  <input
-                    type="text"
-                    value={upcomingFormData.jobLocation}
-                    onChange={(e) =>
-                      setUpcomingFormData({
-                        ...upcomingFormData,
-                        jobLocation: e.target.value,
-                      })
-                    }
-                    className="w-full pl-10 pr-4 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter job location"
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          <CommonFormFields
+            selectedType={selectedType}
+            generalFormData={generalFormData}
+            upcomingFormData={upcomingFormData}
+            aiFormData={aiFormData}
+            onGeneralFormDataChange={setGeneralFormData}
+            onUpcomingFormDataChange={setUpcomingFormData}
+            onAIFormDataChange={setAIFormData}
+            isLoading={isLoading}
+          />
 
           {/* Action Buttons */}
           <div className="flex space-x-3 pt-4">

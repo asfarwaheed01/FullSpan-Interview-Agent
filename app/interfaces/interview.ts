@@ -127,3 +127,11 @@ export interface InterviewContextType {
   clearError: () => void;
   refreshInterviews: () => Promise<void>;
 }
+
+export interface RecommendationOccupation {
+  id: string;
+  name: string;
+  ai_automation_risk_score: string;
+  score: number;
+  _id: string;
+}
