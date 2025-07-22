@@ -97,8 +97,8 @@ export default function InterviewTypeSelector({
                   <h4 className="font-semibold text-gray-900 text-sm">
                     {type.title}
                   </h4>
-                  <p className="text-xs text-gray-600">{type.description}</p>
                 </div>
+
                 <div
                   className={`
                     w-4 h-4 rounded-full border-2 flex items-center justify-center
@@ -122,6 +122,7 @@ export default function InterviewTypeSelector({
                   )}
                 </div>
               </div>
+              <p className="text-xs mb-1 text-gray-600">{type.description}</p>
               <ul className="text-xs text-gray-600 space-y-1">
                 {type.features.map((feature, index) => (
                   <li key={index}>• {feature}</li>

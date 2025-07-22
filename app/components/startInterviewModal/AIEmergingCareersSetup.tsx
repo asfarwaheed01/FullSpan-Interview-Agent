@@ -1,4 +1,3 @@
-// components/dashboard/AIEmergingCareersSetup.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -199,15 +198,17 @@ export default function AIEmergingCareersSetup({
       if (response.ok) {
         const data: RecommendationsResponse = await response.json();
         if (data.success) {
-          // Check if data is the new format or legacy format
           if (Array.isArray(data.data)) {
-            // Legacy format - update formData
             onFormDataChange({
               ...formData,
+              selectedOccupation: occupationName,
               recommendedOccupations: data.data || [],
             });
+
+            if (data.data.length === 0) {
+              setRecommendations(null);
+            }
           } else {
-            // New format - set recommendations
             setRecommendations(data.data);
           }
         }
@@ -274,21 +275,45 @@ export default function AIEmergingCareersSetup({
           <select
             value={formData.selectedOccupation}
             onChange={(e) => handleOccupationSelect(e.target.value)}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 bg-white shadow-sm transition-all duration-200 text-gray-800 font-medium"
             disabled={isLoading || loadingOccupations}
             required
             size={
               occupations.length > 10 ? 10 : Math.max(occupations.length, 3)
             }
-            style={{ height: "auto", minHeight: "120px", maxHeight: "300px" }}
+            style={{
+              height: "auto",
+              minHeight: "140px",
+              maxHeight: "320px",
+              background: "white",
+            }}
           >
-            <option value="">
+            <option
+              value=""
+              className="p-3 text-gray-500 bg-gray-50 font-medium"
+            >
               {loadingOccupations
                 ? "Loading occupations..."
                 : "Select occupation"}
             </option>
             {occupations.map((occupation) => (
-              <option key={occupation.id} value={occupation.name}>
+              <option
+                key={occupation.id}
+                value={occupation.name}
+                className="p-3 text-gray-800 hover:bg-purple-50 font-medium border-b border-gray-100 last:border-b-0"
+                style={{
+                  backgroundColor:
+                    formData.selectedOccupation === occupation.name
+                      ? "#8B5CF6"
+                      : "white",
+                  color:
+                    formData.selectedOccupation === occupation.name
+                      ? "white"
+                      : "#374151",
+                  padding: "12px 16px",
+                  borderBottom: "1px solid #F3F4F6",
+                }}
+              >
                 {occupation.name}
               </option>
             ))}

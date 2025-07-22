@@ -51,6 +51,7 @@ export interface UpcomingFormData {
   interviewFocus: string;
   duration: string;
   jobLocation: string;
+  interviewStage: string;
 }
 
 export interface AIFormData {
@@ -91,6 +92,7 @@ export default function StartInterviewModal({
     interviewFocus: "For all interview",
     duration: "15",
     jobLocation: "Calgary, 7th Road",
+    interviewStage: "Complete Interview in One Go",
   });
 
   const [aiFormData, setAIFormData] = useState<AIFormData>({
@@ -213,7 +215,7 @@ export default function StartInterviewModal({
         jobDescription = upcomingFormData.jobDescription;
         companyDetails =
           upcomingFormData.companyDetails || "Company details not provided";
-        interviewStage = "Job Interview";
+        interviewStage = upcomingFormData.interviewStage;
       } else if (selectedType === "ai-careers") {
         jobDescription = `AI Emerging Careers interview for ${
           aiFormData.selectedOccupation

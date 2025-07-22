@@ -1,4 +1,3 @@
-// components/dashboard/UpcomingJobSetup.tsx
 "use client";
 
 import { Upload, FileText } from "lucide-react";
@@ -68,6 +67,34 @@ export default function UpcomingJobSetup({
           rows={3}
           disabled={isLoading}
         />
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Interview Stage <span className="text-red-500">*</span>
+        </label>
+        <select
+          value={formData.interviewStage}
+          onChange={(e) =>
+            onFormDataChange({
+              ...formData,
+              interviewStage: e.target.value,
+            })
+          }
+          className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+          disabled={isLoading}
+          required
+        >
+          <option value="">Select interview stage</option>
+          <option value="Initial/HR Screening">Initial/HR Screening</option>
+          <option value="Technical/Second Interview">
+            Technical/Second Interview
+          </option>
+          <option value="Final Interview">Final Interview</option>
+          <option value="Complete Interview in One Go">
+            Complete Interview in One Go
+          </option>
+        </select>
       </div>
 
       {/* Resume Details */}
