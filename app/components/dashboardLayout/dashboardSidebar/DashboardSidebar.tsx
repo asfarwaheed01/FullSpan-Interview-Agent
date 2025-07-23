@@ -19,7 +19,7 @@ const sidebarItems = [
     icon: LayoutDashboard,
   },
   {
-    name: "Recent Interview",
+    name: "Recent Interviews",
     href: "/dashboard/recent",
     icon: Clock,
   },

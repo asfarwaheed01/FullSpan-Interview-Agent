@@ -16,3 +16,14 @@ export interface ProfessionalInfo {
   education: string;
   certificates: File[];
 }
+
+export interface UserConfiguration {
+  _id: string;
+  userId: string;
+  personalInfo: PersonalInfo;
+  professionalInfo: ProfessionalInfo;
+  isCompleted: boolean;
+  completedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}

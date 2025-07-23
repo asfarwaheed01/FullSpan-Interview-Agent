@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, Clock, Star, ArrowRight, TrendingUp } from "lucide-react";
+import { Calendar, Clock, Star, ArrowRight } from "lucide-react";
 import StartInterviewModal from "../components/startInterviewModal/StartInterviewModal";
 import Image from "next/image";
 import { useInterviews } from "../contexts/InterviewContext";
@@ -246,46 +246,6 @@ export default function DashboardPage() {
               className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
             >
               View All Interviews →
-            </button>
-          </div>
-        </div>
-
-        {/* Quick Actions - Mobile Optimized */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-100">
-            <div className="flex items-center mb-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <Clock className="w-5 h-5 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
-                Practice Sessions
-              </h3>
-            </div>
-            <p className="text-xs sm:text-sm text-gray-600 mb-4">
-              Start quick 10-minute practice sessions for specific skills
-            </p>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
-            >
-              Start Practice →
-            </button>
-          </div>
-
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 sm:p-6 border border-green-100">
-            <div className="flex items-center mb-3">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
-                View Progress
-              </h3>
-            </div>
-            <p className="text-xs sm:text-sm text-gray-600 mb-4">
-              Track your improvement over time with detailed analytics
-            </p>
-            <button className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors">
-              View Analytics →
             </button>
           </div>
         </div>
