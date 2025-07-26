@@ -20,7 +20,7 @@ export default function DashboardPage() {
       return;
     }
     fetchInterviews(1);
-  }, [token]);
+  }, [token, fetchInterviews]);
 
   // Get recent interviews (first 3)
   const recentInterviews = interviews.slice(0, 3);
@@ -65,9 +65,8 @@ export default function DashboardPage() {
       <div className="space-y-6 sm:space-y-8">
         {/* Interview Tips Card */}
         <div
-          className="rounded-xl p-6 sm:p-8 text-white relative overflow-hidden"
+          className="rounded-xl p-6 sm:p-8 bg-gradient-to-r from-pink-600 to-indigo-800 text-white relative overflow-hidden"
           style={{
-            backgroundColor: "#1B1B3B",
             fontFamily: "Plus Jakarta Sans, sans-serif",
           }}
         >
@@ -141,7 +140,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setIsModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold transition-all duration-200 inline-flex items-center text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              className="bg-gradient-to-r from-pink-600 to-indigo-800 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold transition-all duration-200 inline-flex items-center text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               Start New Interview
               <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />

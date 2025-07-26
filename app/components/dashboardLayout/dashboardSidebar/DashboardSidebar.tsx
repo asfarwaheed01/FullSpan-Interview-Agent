@@ -11,6 +11,9 @@ import {
   AlignJustify,
 } from "lucide-react";
 import { useSidebar } from "@/app/dashboard/layout";
+import logo from "@/public/assets/Intervia-logo.svg";
+import logoIcon from "@/public/assets/icon.png";
+import Image from "next/image";
 
 const sidebarItems = [
   {
@@ -49,9 +52,9 @@ export default function DashboardSidebar() {
       {/* Sidebar */}
       <div
         className={`
-        bg-white border-r border-gray-200 flex flex-col z-50
+        bg-[#212529] flex flex-col z-50
         transition-all duration-300 ease-in-out transform
-        ${isCollapsed ? "w-16" : "w-64"}
+        ${isCollapsed ? "w-16" : "w-[270px]"}
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         fixed lg:relative h-full
         shadow-lg lg:shadow-none
@@ -60,7 +63,7 @@ export default function DashboardSidebar() {
         {/* Logo section */}
         <div
           className={`
-          flex flex-col border-b border-gray-200 min-h-[73px]
+          flex flex-col border-b-[1px] border-gray-700 min-h-[50px]
           ${isCollapsed ? "p-2" : "p-4"}
         `}
         >
@@ -68,35 +71,29 @@ export default function DashboardSidebar() {
           <div
             className={`
             flex items-center transition-all duration-300
-            ${isCollapsed ? "justify-center mb-2" : "justify-between mb-0"}
+            ${isCollapsed ? "" : "justify-between mb-0"}
           `}
           >
             <div
               className={`
               flex items-center
-              ${isCollapsed ? "flex-col space-y-2" : "space-x-3"}
+              ${isCollapsed ? "" : "space-x-3"}
             `}
             >
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-bold text-sm">L</span>
-              </div>
-              <span
-                className={`
-                text-xl font-bold text-gray-900 transition-all duration-300
-                ${isCollapsed ? "opacity-0 h-0 overflow-hidden" : "opacity-100"}
-              `}
-              >
-                LOGO
-              </span>
+              {isCollapsed ? (
+                <Image src={logoIcon} alt="logo" className="w-full h-full" />
+              ) : (
+                <Image src={logo} alt="logo" />
+              )}
             </div>
 
             {/* Desktop collapse button - aligned with logo when expanded */}
             {!isCollapsed && (
               <button
                 onClick={toggleCollapse}
-                className="hidden lg:flex items-center justify-center p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors duration-200"
+                className="hidden lg:flex items-center justify-center p-2 rounded-lg hover:bg-gray-600 cursor-pointer transition-colors duration-200"
               >
-                <AlignJustify size={16} className="text-gray-600" />
+                <AlignJustify size={16} className="text-[#ffffff]" />
               </button>
             )}
 
@@ -113,9 +110,9 @@ export default function DashboardSidebar() {
           {isCollapsed && (
             <button
               onClick={toggleCollapse}
-              className="hidden lg:flex items-center justify-center p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors duration-200 w-8 mx-auto"
+              className="hidden lg:flex items-center justify-center p-2 rounded-lg hover:bg-gray-600 transition-colors duration-200 w-8 mx-auto"
             >
-              <AlignJustify size={14} className="text-gray-600" />
+              <AlignJustify size={14} className="text-[#FFFFFF]" />
             </button>
           )}
         </div>
@@ -133,11 +130,11 @@ export default function DashboardSidebar() {
                 onClick={closeMobile}
                 className={`
                   group flex items-center px-3 py-3 text-sm font-medium 
-                  transition-all duration-200 relative
+                  transition-all duration-200 relative rounded-md
                   ${
                     isActive
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-gradient-to-r from-pink-600 to-indigo-800 text-[#ffffff]"
+                      : "text-[#a4a4a4] hover:bg-gray-800 hover:text-gray-300"
                   }
                   ${isCollapsed ? "justify-center" : ""}
                 `}
@@ -147,7 +144,7 @@ export default function DashboardSidebar() {
                   className={`
                     flex-shrink-0 transition-all duration-200
                     ${isCollapsed ? "" : "mr-3"}
-                    ${isActive ? "text-blue-600" : ""}
+                    ${isActive ? "text-[#FFFFFF]" : ""}
                   `}
                 />
                 <span
@@ -162,11 +159,6 @@ export default function DashboardSidebar() {
                 >
                   {item.name}
                 </span>
-
-                {/* Active indicator */}
-                {isActive && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600" />
-                )}
 
                 {/* Tooltip for collapsed state */}
                 {isCollapsed && (

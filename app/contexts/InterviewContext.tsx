@@ -15,6 +15,7 @@ import {
   InterviewContextType,
   Pagination,
 } from "../interfaces/interview";
+import { useAuth } from "./AuthContext";
 
 const InterviewContext = createContext<InterviewContextType | undefined>(
   undefined
@@ -27,6 +28,7 @@ interface InterviewProviderProps {
 export const InterviewProvider: React.FC<InterviewProviderProps> = ({
   children,
 }) => {
+  const { logout } = useAuth();
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
@@ -75,6 +77,7 @@ export const InterviewProvider: React.FC<InterviewProviderProps> = ({
         );
 
         if (response.status === 401) {
+          logout();
           setError("Session expired. Please log in again.");
           return;
         }
