@@ -16,10 +16,8 @@ const Navbar = () => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Check if we're on the landing page
   const isLandingPage = pathname === "/";
 
-  // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
@@ -62,7 +60,6 @@ const Navbar = () => {
     router.push("/settings");
   };
 
-  // Smooth scroll to section
   const scrollToSection = (sectionId: string) => {
     setIsMobileMenuOpen(false);
     const element = document.getElementById(sectionId);
@@ -74,7 +71,6 @@ const Navbar = () => {
     }
   };
 
-  // Generate avatar initials from username or email
   const getAvatarInitials = () => {
     if (!user) return "U";
 
@@ -93,7 +89,30 @@ const Navbar = () => {
     return "U";
   };
 
-  // Animation variants
+  const getLogoSrc = () => {
+    if (!isLandingPage) {
+      return "/assets/Intervia-logo.svg";
+    }
+
+    if (isScrolled) {
+      return "/assets/intervia-logo-black.png";
+    }
+
+    return "/assets/Intervia-logo.svg";
+  };
+
+  const getLogoStyles = () => {
+    if (!isLandingPage) {
+      return { width: 120, height: 120 };
+    }
+
+    if (isScrolled) {
+      return { width: 170, height: 150 };
+    }
+
+    return { width: 120, height: 120 };
+  };
+
   const mobileMenuVariants = {
     closed: {
       opacity: 0,
@@ -174,10 +193,8 @@ const Navbar = () => {
     },
   };
 
-  // Determine navbar background and text colors
   const getNavbarStyles = () => {
     if (!isLandingPage) {
-      // For non-landing pages, always use purple background with white text
       return {
         bg: "bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 shadow-sm border-b border-purple-500/20",
         text: "text-white",
@@ -190,7 +207,6 @@ const Navbar = () => {
       };
     }
 
-    // For landing page, use scroll-based styling
     if (isScrolled) {
       return {
         bg: "bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100",
@@ -225,19 +241,17 @@ const Navbar = () => {
     >
       <div className="container mx-auto py-3 px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
           <div className="flex-shrink-0">
             <Link href={"/"}>
               <Image
-                src={"/assets/Intervia-logo.svg"}
+                src={getLogoSrc()}
                 alt="Logo"
-                width={"120"}
-                height={"120"}
+                width={getLogoStyles().width}
+                height={getLogoStyles().height}
               />
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-8">
               <motion.div
@@ -285,9 +299,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Desktop Right Side */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* User Avatar or Get Started Button */}
             {isAuthenticated && user ? (
               <div className="relative">
                 <motion.button
@@ -366,7 +378,6 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile menu button */}
           <div className="md:hidden">
             <motion.button
               onClick={toggleMobileMenu}
@@ -402,7 +413,6 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Navigation Menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -443,7 +453,6 @@ const Navbar = () => {
                 Contact Us
               </motion.button>
 
-              {/* Mobile User Section or Get Started Button */}
               {isAuthenticated && user ? (
                 <motion.div variants={menuItemVariants} className="px-3 py-2">
                   <div className="flex items-center space-x-3 mb-3">
