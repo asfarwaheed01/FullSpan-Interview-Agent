@@ -95,7 +95,7 @@ const Navbar = () => {
     }
 
     if (isScrolled) {
-      return "/assets/intervia-logo-black.png";
+      return "/assets/Intervia-logo-black.png";
     }
 
     return "/assets/Intervia-logo.svg";
