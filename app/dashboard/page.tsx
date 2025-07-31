@@ -7,14 +7,16 @@ import StartInterviewModal from "../components/startInterviewModal/StartIntervie
 import Image from "next/image";
 import { useInterviews } from "../contexts/InterviewContext";
 import { getToken } from "../utils/constants";
+import { Tip, TipsResponse } from "../interfaces/interview";
 
 export default function DashboardPage() {
   const token = getToken();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tips, setTips] = useState<Tip[]>([]);
+  const [tipsLoading, setTipsLoading] = useState(true);
   const router = useRouter();
   const { interviews, loading, error, fetchInterviews } = useInterviews();
 
-  // Fetch interviews on component mount
   useEffect(() => {
     if (!token) {
       return;
@@ -22,14 +24,60 @@ export default function DashboardPage() {
     fetchInterviews(1);
   }, [token, fetchInterviews]);
 
+  // Fetch tips on component mount
+  useEffect(() => {
+    const fetchTips = async () => {
+      try {
+        setTipsLoading(true);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/tips/random`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data: TipsResponse = await response.json();
+          if (data.success) {
+            setTips(data.data);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching tips:", error);
+        setTips([
+          {
+            id: 1,
+            category: "preparation",
+            tip: "Practice the STAR method (Situation, Task, Action, Result) for behavioral questions",
+            importance: "high",
+          },
+          {
+            id: 2,
+            category: "communication",
+            tip: "Maintain good eye contact throughout the interview to show confidence and engagement",
+            importance: "medium",
+          },
+          {
+            id: 3,
+            category: "mindset",
+            tip: "View the interview as a two-way conversation - you're evaluating them as much as they're evaluating you",
+            importance: "medium",
+          },
+        ]);
+      } finally {
+        setTipsLoading(false);
+      }
+    };
+
+    if (token) {
+      fetchTips();
+    }
+  }, [token]);
+
   // Get recent interviews (first 3)
   const recentInterviews = interviews.slice(0, 3);
-
-  const interviewTips = [
-    "Practice the STAR method (Situation, Task, Action, Result) for behavioral questions",
-    "Click below to start your first mock session with our AI Interviewer.",
-    "Click below to start your first mock session with our AI Interviewer.",
-  ];
 
   // Function to get status color based on score or status
   const getStatusColor = (status: string) => {
@@ -60,6 +108,21 @@ export default function DashboardPage() {
     router.push("/dashboard/recent");
   };
 
+  // Tips skeleton loader component
+  const TipsSkeleton = () => (
+    <div className="space-y-3 sm:space-y-4">
+      {[1, 2, 3].map((index) => (
+        <div key={index} className="flex items-start animate-pulse">
+          <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 mr-3 sm:mr-4 flex-shrink-0"></div>
+          <div className="flex-1">
+            <div className="h-4 bg-white/30 rounded-md mb-1"></div>
+            <div className="h-4 bg-white/20 rounded-md w-3/4"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <>
       <div className="space-y-6 sm:space-y-8">
@@ -79,16 +142,20 @@ export default function DashboardPage() {
                   </h2>
                 </div>
 
-                <div className="space-y-3 sm:space-y-4">
-                  {interviewTips.map((tip, index) => (
-                    <div key={index} className="flex items-start">
-                      <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 mr-3 sm:mr-4 flex-shrink-0"></div>
-                      <p className="text-sm sm:text-base leading-relaxed">
-                        {tip}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                {tipsLoading ? (
+                  <TipsSkeleton />
+                ) : (
+                  <div className="space-y-3 sm:space-y-4">
+                    {tips.map((tip) => (
+                      <div key={tip.id} className="flex items-start">
+                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 mr-3 sm:mr-4 flex-shrink-0"></div>
+                        <p className="text-sm sm:text-base leading-relaxed">
+                          {tip.tip}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Bulb Image */}
@@ -250,7 +317,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Start Interview Modal */}
       {isModalOpen && (
         <StartInterviewModal
           isOpen={isModalOpen}

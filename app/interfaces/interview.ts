@@ -135,3 +135,15 @@ export interface RecommendationOccupation {
   score: number;
   _id: string;
 }
+
+export interface Tip {
+  id: number;
+  category: string;
+  tip: string;
+  importance: string;
+}
+
+export interface TipsResponse {
+  success: boolean;
+  data: Tip[];
+}
