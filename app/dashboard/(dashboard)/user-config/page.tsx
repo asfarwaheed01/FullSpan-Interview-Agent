@@ -15,8 +15,10 @@ import {
   Download,
 } from "lucide-react";
 import { ApiUserConfiguration } from "@/app/interfaces/user-config";
+import { useRouter } from "next/navigation";
 
 const UserConfigPage = () => {
+  const router = useRouter();
   const [config, setConfig] = useState<ApiUserConfiguration | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -327,10 +329,10 @@ const UserConfigPage = () => {
             <p>{error || "Configuration not found"}</p>
           </div>
           <button
-            onClick={fetchUserConfiguration}
+            onClick={() => router.push("/user-configuration")}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
-            Retry
+            Add Configuration Details
           </button>
         </div>
       </div>
