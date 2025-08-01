@@ -3,139 +3,15 @@ import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useAuth } from "@/app/contexts/AuthContext";
-import { User, Briefcase, CheckCircle, CreditCard } from "lucide-react";
+import { User, Briefcase, CheckCircle } from "lucide-react";
 import { PersonalInfo, ProfessionalInfo } from "@/app/interfaces/userConfig";
 import { loadStripe } from "@stripe/stripe-js";
-import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
+import StripeCardForm from "@/app/components/StripeCardForm/StripeCardForm";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
-
-const PaymentForm = ({ onPaymentAdded }: { onPaymentAdded: () => void }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const cardElement = elements.getElement(CardElement);
-
-      if (!cardElement) {
-        setError("Card element not found");
-        setLoading(false);
-        return;
-      }
-
-      // Create payment method
-      const { error: stripeError, paymentMethod } =
-        await stripe.createPaymentMethod({
-          type: "card",
-          card: cardElement,
-        });
-
-      if (stripeError) {
-        setError(stripeError.message || "An error occurred");
-        setLoading(false);
-        return;
-      }
-
-      // Save payment method to backend
-      const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
-        }/api/payments/add-payment-method`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({
-            paymentMethodId: paymentMethod.id,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to save payment method");
-      }
-
-      // Success
-      onPaymentAdded();
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to add payment method";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const cardElementOptions = {
-    style: {
-      base: {
-        fontSize: "16px",
-        color: "#424770",
-        "::placeholder": {
-          color: "#aab7c4",
-        },
-        padding: "12px",
-      },
-      invalid: {
-        color: "#9e2146",
-      },
-    },
-    hidePostalCode: false,
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Card Input */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Card Information
-        </label>
-        <div className="border border-gray-300 rounded-lg p-4 bg-white">
-          <CardElement options={cardElementOptions} />
-        </div>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
-
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={!stripe || loading}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-3 rounded-lg font-medium transition-colors"
-      >
-        {loading ? "Adding Payment Method..." : "Add Payment Method"}
-      </button>
-    </form>
-  );
-};
 
 const UserConfigurationPage = () => {
   const router = useRouter();
@@ -169,12 +45,6 @@ const UserConfigurationPage = () => {
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
   const handlePaymentAdded = () => {
-    toast.success("Payment method added successfully!", {
-      position: "top-right",
-      autoClose: 2000,
-    });
-
-    // Redirect to dashboard after short delay
     setTimeout(() => {
       router.push("/dashboard");
     }, 2500);
@@ -340,7 +210,8 @@ const UserConfigurationPage = () => {
         Please, enter your personal information
       </h1>
       <p className="text-gray-600 mb-8">
-        Lorem ipsum dolor sit amet. Id iusto dolores sed placeat ipsa.
+        This information will be used by the interview agent to Evaluate your
+        Skills and Experience
       </p>
 
       <div className="flex gap-8">
@@ -372,9 +243,6 @@ const UserConfigurationPage = () => {
             onChange={(e) => handleFileUpload("avatar", e.target.files)}
             className="hidden"
           />
-          <p className="text-sm text-gray-500 text-center max-w-32">
-            Lorem ipsum dolor sit amet. Id iusto dolores sed placeat ipsa.
-          </p>
         </div>
 
         {/* Form Fields */}
@@ -548,12 +416,31 @@ const UserConfigurationPage = () => {
 
   const renderStep2 = () => (
     <div className="flex-1 bg-white p-8">
-      <h1 className="text-3xl text-center font-bold text-gray-800 mb-2">
-        Please, enter your Professional information
-      </h1>
-      <p className="text-gray-600 text-center mb-8">
-        Lorem ipsum dolor sit amet. Id iusto dolores sed placeat ipsa.
-      </p>
+      <div className="mb-2">
+        <h1 className="text-3xl text-center font-bold text-gray-800 mb-4">
+          Please, enter your Professional information
+        </h1>
+
+        <button
+          onClick={() => setCurrentStep(1)}
+          className="cursor-pointer group flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-all duration-200 hover:bg-gray-50 rounded-lg font-medium"
+        >
+          <svg
+            className="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-1"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          Back to Personal Information
+        </button>
+      </div>
 
       <div className="space-y-6 max-w-4xl">
         <div className="grid grid-cols-4 gap-6 items-start">
@@ -694,40 +581,24 @@ const UserConfigurationPage = () => {
   const renderStep3 = () => (
     <div className="flex-1 bg-white p-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-2">Setup Complete!</h1>
-      <p className="text-gray-600 mb-8">
+      <p className="text-gray-600 mb-2">
         Your profile is ready. Add a payment method or go to your dashboard.
       </p>
 
       <div className="max-w-2xl mx-auto">
         <div className="space-y-6">
           {/* Payment Form Header */}
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CreditCard className="w-8 h-8 text-blue-600" />
-            </div>
+          <div className="text-center mb-2">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               Add Payment Method (Optional)
             </h3>
             <p className="text-gray-600">Add payment or skip and add later</p>
           </div>
 
-          {/* Pricing Info */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">
-                Interview Session Fee
-              </span>
-              <span className="text-lg font-bold text-gray-900">$5.00 USD</span>
-            </div>
-            <p className="text-xs text-gray-600 mt-1">
-              You&apos;ll be charged $5 for each interview session you start
-            </p>
-          </div>
-
-          {/* Stripe Payment Form */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          {/* Your Existing Stripe Card Form */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
             <Elements stripe={stripePromise}>
-              <PaymentForm onPaymentAdded={handlePaymentAdded} />
+              <StripeCardForm onCardAdded={handlePaymentAdded} />
             </Elements>
           </div>
 
@@ -735,7 +606,7 @@ const UserConfigurationPage = () => {
           <div className="text-center pt-4">
             <button
               onClick={handleGoToDashboard}
-              className="w-full cursor-pointer text-gray-600 hover:text-gray-800 px-6 py-3 rounded-lg font-medium transition-colors mb-3"
+              className="w-full cursor-pointer text-gray-600 hover:text-gray-800 px-6 py-3 rounded-lg font-medium transition-colors mb-3 border border-gray-300 hover:border-gray-400"
             >
               Continue to Dashboard
             </button>
@@ -755,71 +626,98 @@ const UserConfigurationPage = () => {
       {currentStep === 3 && renderStep3()}
 
       {/* Sidebar - keep your existing sidebar code */}
-      <div className="w-80 bg-[#271C42] text-white p-8 flex flex-col">
-        {/* Steps Indicator */}
-        <div className="space-y-8 mb-auto">
-          <div className="flex items-center">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
-                currentStep >= 1
-                  ? "bg-white text-gray-900"
-                  : "bg-gray-700 text-gray-400"
-              }`}
-            >
-              <User className="w-5 h-5" />
+      <div className="w-80 bg-[#2A1F47] text-white p-8 flex flex-col min-h-screen">
+        {/* Steps Indicator with connecting lines */}
+        <div className="flex flex-1 items-center justify-center">
+          <div className="relative">
+            {/* Step 1 - Personal Information */}
+            <div className="flex items-start mb-2">
+              <div className="flex flex-col items-center mr-6">
+                <div
+                  className={`w-12 h-12 rounded-full border-2 flex items-center justify-center ${
+                    currentStep >= 1
+                      ? "bg-white border-white text-[#2A1F47]"
+                      : "bg-transparent border-gray-500 text-gray-500"
+                  }`}
+                >
+                  <User className="w-6 h-6" />
+                </div>
+                {/* Connecting line */}
+                <div className="w-[2px] h-10 bg-[#ffffff] mt-2"></div>
+              </div>
+              <div className="pt-3">
+                <h3
+                  className={`text-lg font-medium ${
+                    currentStep >= 1 ? "text-white" : "text-gray-400"
+                  }`}
+                >
+                  Personal information
+                </h3>
+              </div>
             </div>
-            <div>
-              <h3 className="font-medium">Personal information</h3>
-            </div>
-          </div>
 
-          <div className="flex items-center">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
-                currentStep >= 2
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-700 text-gray-400"
-              }`}
-            >
-              <Briefcase className="w-5 h-5" />
+            {/* Step 2 - Professional Information */}
+            <div className="flex items-start mb-2">
+              <div className="flex flex-col items-center mr-6">
+                <div
+                  className={`w-12 h-12 rounded-full border-2 flex items-center justify-center ${
+                    currentStep >= 2
+                      ? "bg-[#4F46E5] border-[#4F46E5] text-white"
+                      : "bg-transparent border-gray-500 text-gray-500"
+                  }`}
+                >
+                  <Briefcase className="w-6 h-6" />
+                </div>
+                {/* Connecting line */}
+                <div className="w-[2px] h-10 bg-[#ffffff] mt-2"></div>
+              </div>
+              <div className="pt-3">
+                <h3
+                  className={`text-lg font-medium ${
+                    currentStep >= 2 ? "text-[#4F46E5]" : "text-gray-400"
+                  }`}
+                >
+                  Professional information
+                </h3>
+              </div>
             </div>
-            <div>
-              <h3
-                className={`font-medium ${
-                  currentStep >= 2 ? "text-blue-400" : "text-gray-400"
-                }`}
-              >
-                Professional information
-              </h3>
-            </div>
-          </div>
 
-          <div className="flex items-center">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
-                currentStep >= 3
-                  ? "bg-white text-gray-900"
-                  : "bg-gray-700 text-gray-400"
-              }`}
-            >
-              <CheckCircle className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-medium">Payment & Complete</h3>
+            {/* Step 3 - Onboarding */}
+            <div className="flex items-start">
+              <div className="flex flex-col items-center mr-6">
+                <div
+                  className={`w-12 h-12 rounded-full border-2 flex items-center justify-center ${
+                    currentStep >= 3
+                      ? "bg-white border-white text-[#2A1F47]"
+                      : "bg-transparent border-gray-500 text-gray-500"
+                  }`}
+                >
+                  <CheckCircle className="w-6 h-6" />
+                </div>
+              </div>
+              <div className="pt-3">
+                <h3
+                  className={`text-lg font-medium ${
+                    currentStep >= 3 ? "text-white" : "text-gray-400"
+                  }`}
+                >
+                  Onboarding
+                </h3>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Progress */}
+        {/* Progress Section */}
         {currentStep < 3 && (
-          <div className="mt-auto">
-            <div className="flex justify-between text-sm mb-2">
-              <span>{currentStep} to 3 step</span>
-              <span>{getStepProgress()} to complete</span>
+          <div className="mt-8">
+            <div className="flex justify-between text-sm text-gray-300 mb-3">
+              <span>{currentStep} of 3 steps</span>
+              <span>{getStepProgress()} complete</span>
             </div>
             <div className="w-full bg-gray-700 rounded-full h-2">
               <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                className="bg-[#4F46E5] h-2 rounded-full transition-all duration-300"
                 style={{ width: getStepProgress() }}
               ></div>
             </div>
@@ -835,7 +733,7 @@ const UserConfigurationPage = () => {
               className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
                 loading
                   ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                  : "bg-blue-500 hover:bg-blue-600 text-white"
+                  : "bg-[#4F46E5] hover:bg-[#4338CA] text-white"
               }`}
             >
               {loading ? "Saving..." : "NEXT"}
