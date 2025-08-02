@@ -1,7 +1,12 @@
 "use client";
 import React, { createContext, useContext, useReducer, useEffect } from "react";
 import { toast } from "react-toastify";
-import { AuthState, User } from "../interfaces/auth";
+import {
+  AuthState,
+  LoginResponse,
+  RegisterResponse,
+  User,
+} from "../interfaces/auth";
 
 // Types
 
@@ -18,13 +23,17 @@ export interface AuthContextType extends AuthState {
     email: string,
     password: string,
     rememberMe?: boolean
-  ) => Promise<{ isFirstLogin: boolean }>;
+  ) => Promise<LoginResponse>;
   register: (
     username: string,
     email: string,
     password: string,
     avatar?: string
-  ) => Promise<{ isFirstLogin: boolean }>;
+  ) => Promise<RegisterResponse>;
+  verifyEmail: (
+    email: string,
+    otp: string
+  ) => Promise<{ success: boolean; user?: User; token?: string }>;
   socialLogin: (
     email: string,
     username: string,
@@ -118,13 +127,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     email: string,
     password: string,
     rememberMe: boolean = false
-  ): Promise<{ isFirstLogin: boolean }> => {
+  ): Promise<LoginResponse> => {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
       const response = await fetch(
         `${
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
+          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
         }/api/auth/login`,
         {
           method: "POST",
@@ -137,11 +146,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
-      if (data.success && data.data) {
+      if (response.ok && data.success) {
+        // Successful login
         const { token, user } = data.data;
         const isFirstLogin = data.data.user?.isFirstLogin || false;
 
@@ -160,19 +166,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           autoClose: 3000,
         });
 
-        return { isFirstLogin };
+        return {
+          success: true,
+          isFirstLogin,
+          user,
+        };
+      } else if (response.status === 403 && data.data?.needsEmailVerification) {
+        // Email verification needed - don't show error toast, just return info
+        return {
+          success: false,
+          needsEmailVerification: true,
+          email: data.data.email,
+          message: data.message,
+        };
+      } else {
+        // Other login errors
+        const errorMessage = data.message || "Login failed";
+        dispatch({ type: "SET_ERROR", payload: errorMessage });
+
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+
+        throw new Error(errorMessage);
       }
-
-      return { isFirstLogin: false };
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Login failed";
-      dispatch({ type: "SET_ERROR", payload: errorMessage });
+      if (error instanceof Error && !error.message.includes("verification")) {
+        const errorMessage = error.message || "Login failed";
+        dispatch({ type: "SET_ERROR", payload: errorMessage });
 
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 5000,
-      });
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+      }
 
       throw error;
     } finally {
@@ -185,7 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     email: string,
     password: string,
     avatar?: string
-  ): Promise<{ isFirstLogin: boolean }> => {
+  ): Promise<RegisterResponse> => {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
@@ -218,32 +246,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Registration failed");
-      }
-
-      if (data.success && data.data) {
-        const { token, user } = data.data;
-        const isFirstLogin = data.data.user?.isFirstLogin || true;
-
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
-        localStorage.setItem("isAuthenticated", "true");
-
-        dispatch({ type: "LOGIN", payload: { user, isFirstLogin } });
-
+      if (response.ok && data.success) {
         toast.success(
-          `Welcome ${user.username}! Account created successfully.`,
+          "Account created! Please check your email for verification code.",
           {
             position: "top-right",
             autoClose: 5000,
           }
         );
 
-        return { isFirstLogin };
-      }
+        return {
+          success: true,
+          needsEmailVerification: true,
+          email: data.data?.email || email,
+          message: data.message,
+        };
+      } else {
+        // Registration failed
+        const errorMessage = data.message || "Registration failed";
+        dispatch({ type: "SET_ERROR", payload: errorMessage });
 
-      return { isFirstLogin: true };
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+
+        throw new Error(errorMessage);
+      }
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "Registration failed";
@@ -254,6 +283,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         autoClose: 5000,
       });
 
+      throw error;
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: false });
+    }
+  };
+
+  const verifyEmail = async (email: string, otp: string) => {
+    dispatch({ type: "SET_LOADING", payload: true });
+
+    try {
+      const response = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
+        }/api/auth/verify-email`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, otp }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const { token, user } = data.data;
+        const isFirstLogin = user?.isFirstLogin || true;
+
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("isAuthenticated", "true");
+
+        dispatch({ type: "LOGIN", payload: { user, isFirstLogin } });
+
+        toast.success("Email verified successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+
+        return { success: true, user, token };
+      } else {
+        const errorMessage = data.message || "Verification failed";
+        dispatch({ type: "SET_ERROR", payload: errorMessage });
+        throw new Error(errorMessage);
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Verification failed";
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
       throw error;
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
@@ -366,6 +445,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         ...state,
         login,
         register,
+        verifyEmail,
         socialLogin,
         logout,
         updateUser,

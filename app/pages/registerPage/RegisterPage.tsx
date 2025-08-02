@@ -19,6 +19,12 @@ interface FormErrors {
   email?: string;
   password?: string;
   agreeToTerms?: string;
+  general?: string;
+}
+
+interface RegistrationError {
+  message?: string;
+  status?: number;
 }
 
 const RegisterPage: React.FC = () => {
@@ -86,6 +92,8 @@ const RegisterPage: React.FC = () => {
     const newErrors = validateForm();
 
     if (Object.keys(newErrors).length === 0) {
+      setErrors({});
+
       try {
         const username = formData.fullName
           .trim()
@@ -98,15 +106,24 @@ const RegisterPage: React.FC = () => {
           formData.password
         );
 
-        setTimeout(() => {
-          if (result.isFirstLogin) {
-            router.push("/user-configuration");
-          } else {
-            router.push("/dashboard");
-          }
-        }, 2000);
+        // After successful registration, redirect to verification page
+        if (result?.needsEmailVerification || result?.success) {
+          router.push(
+            `/verify-email?email=${encodeURIComponent(
+              formData.email
+            )}&from=register`
+          );
+        }
       } catch (error: unknown) {
         console.error("Registration failed:", error);
+
+        const registrationError = error as RegistrationError;
+
+        if (registrationError?.message) {
+          setErrors({
+            general: registrationError.message,
+          });
+        }
       }
     } else {
       setErrors(newErrors);
@@ -127,7 +144,7 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center md:pt-22 px-4 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -164,13 +181,13 @@ const RegisterPage: React.FC = () => {
           onSubmit={handleSubmit}
         >
           {/* General Error Message */}
-          {error && (
+          {(error || errors.general) && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-red-50 border border-red-200 rounded-lg p-4"
             >
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-red-600">{error || errors.general}</p>
             </motion.div>
           )}
 

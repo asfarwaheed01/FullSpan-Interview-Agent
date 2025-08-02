@@ -5,6 +5,7 @@ export interface User {
   role: string;
   avatar?: string | null;
   lastLogin?: Date | null;
+  isFirstLogin?: boolean;
 }
 
 export interface AuthState {
@@ -13,4 +14,22 @@ export interface AuthState {
   loading: boolean;
   error: string | null;
   isFirstLogin?: boolean;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  isFirstLogin?: boolean;
+  user?: User;
+  needsEmailVerification?: boolean;
+  email?: string;
+  message?: string;
+}
+
+export interface RegisterResponse {
+  success: boolean;
+  isFirstLogin?: boolean;
+  user?: User;
+  needsEmailVerification?: boolean;
+  email?: string;
+  message?: string;
 }

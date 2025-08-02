@@ -16,6 +16,13 @@ interface LoginFormData {
 interface LoginFormErrors {
   email?: string;
   password?: string;
+  general?: string;
+}
+
+interface LoginError {
+  message?: string;
+  status?: number;
+  needsEmailVerification?: boolean;
 }
 
 const LoginPage: React.FC = () => {
@@ -67,6 +74,8 @@ const LoginPage: React.FC = () => {
     const newErrors = validateForm();
 
     if (Object.keys(newErrors).length === 0) {
+      setErrors({});
+
       try {
         const result = await login(
           formData.email,
@@ -74,13 +83,60 @@ const LoginPage: React.FC = () => {
           formData.rememberMe
         );
 
-        if (result.isFirstLogin) {
-          router.push("/user-configuration");
-        } else {
-          router.push("/dashboard");
+        if (
+          result &&
+          typeof result === "object" &&
+          "needsEmailVerification" in result
+        ) {
+          // User needs to verify email - redirect to verification page
+          router.push(
+            `/verify-email?email=${encodeURIComponent(
+              formData.email
+            )}&from=login`
+          );
+          return;
         }
-      } catch (error) {
+
+        // Normal successful login flow
+        if (result && typeof result === "object" && "isFirstLogin" in result) {
+          if (result.isFirstLogin) {
+            router.push("/user-configuration");
+          } else {
+            router.push("/dashboard");
+          }
+        } else {
+          const userData = result?.user || result;
+          if (userData?.isFirstLogin) {
+            router.push("/user-configuration");
+          } else {
+            router.push("/dashboard");
+          }
+        }
+      } catch (error: unknown) {
         console.error("Login failed:", error);
+
+        const loginError = error as LoginError;
+
+        // Check if the error is specifically about email verification
+        if (
+          loginError?.message?.includes("verify your email") ||
+          loginError?.message?.includes("verification") ||
+          loginError?.status === 403 ||
+          loginError?.needsEmailVerification
+        ) {
+          router.push(
+            `/verify-email?email=${encodeURIComponent(
+              formData.email
+            )}&from=login`
+          );
+          return;
+        }
+
+        if (loginError?.message) {
+          setErrors({
+            general: loginError.message,
+          });
+        }
       }
     } else {
       setErrors(newErrors);
@@ -141,14 +197,14 @@ const LoginPage: React.FC = () => {
           className="mt-8 space-y-6"
           onSubmit={handleSubmit}
         >
-          {/* General Error Message */}
-          {error && (
+          {/* General Error Message - Show context error or local error */}
+          {(error || errors.general) && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-red-50 border border-red-200 rounded-lg p-4"
             >
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-red-600">{error || errors.general}</p>
             </motion.div>
           )}
 

@@ -77,26 +77,30 @@ const ForgotPasswordPage: React.FC = () => {
       setFormState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        // Simulate API call for password reset
-        console.log("Password reset requested for:", formData.email);
+        const response = await fetch(
+          `${
+            process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
+          }/api/auth/forgot-password`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email: formData.email }),
+          }
+        );
 
-        // Replace this with your actual API call
-        await new Promise((resolve, reject) => {
-          setTimeout(() => {
-            // Simulate success most of the time
-            if (Math.random() > 0.1) {
-              resolve("Success");
-            } else {
-              reject(new Error("Email not found"));
-            }
-          }, 2000);
-        });
+        const data = await response.json();
 
-        setFormState((prev) => ({
-          ...prev,
-          isLoading: false,
-          isSubmitted: true,
-        }));
+        if (response.ok) {
+          setFormState((prev) => ({
+            ...prev,
+            isLoading: false,
+            isSubmitted: true,
+          }));
+        } else {
+          throw new Error(data.message || "Failed to send reset email");
+        }
       } catch (error) {
         setFormState((prev) => ({
           ...prev,
@@ -113,7 +117,7 @@ const ForgotPasswordPage: React.FC = () => {
   };
 
   const handleBackToLogin = (): void => {
-    router.push("/login"); // Adjust the path as needed
+    router.push("/login");
   };
 
   const handleTryAgain = (): void => {
@@ -253,7 +257,7 @@ const ForgotPasswordPage: React.FC = () => {
                 </p>
               </div>
 
-              <div onSubmit={() => handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label
                     htmlFor="email"
@@ -272,12 +276,7 @@ const ForgotPasswordPage: React.FC = () => {
                       errors.email ? "border-red-300" : "border-gray-300"
                     } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                     placeholder="Your Email"
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        // handleSubmit(e as any);
-                      }
-                    }}
+                    disabled={formState.isLoading}
                   />
                   {errors.email && (
                     <p className="mt-1 text-sm text-red-600">{errors.email}</p>
@@ -295,8 +294,7 @@ const ForgotPasswordPage: React.FC = () => {
                 )}
 
                 <motion.button
-                  type="button"
-                  onClick={() => handleSubmit}
+                  type="submit"
                   disabled={formState.isLoading}
                   whileHover={{ scale: formState.isLoading ? 1 : 1.02 }}
                   whileTap={{ scale: formState.isLoading ? 1 : 0.98 }}
@@ -314,7 +312,7 @@ const ForgotPasswordPage: React.FC = () => {
                     "Send Reset Link"
                   )}
                 </motion.button>
-              </div>
+              </form>
             </div>
           </div>
 

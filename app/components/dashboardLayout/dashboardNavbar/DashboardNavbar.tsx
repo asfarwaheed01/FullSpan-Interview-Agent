@@ -17,7 +17,6 @@ export default function DashboardNavbar() {
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
-  console.log(user);
 
   const handleConfig = () => {
     router.push("/dashboard/user-config");
