@@ -88,7 +88,6 @@ const LoginPage: React.FC = () => {
           typeof result === "object" &&
           "needsEmailVerification" in result
         ) {
-          // User needs to verify email - redirect to verification page
           router.push(
             `/verify-email?email=${encodeURIComponent(
               formData.email
@@ -97,7 +96,6 @@ const LoginPage: React.FC = () => {
           return;
         }
 
-        // Normal successful login flow
         if (result && typeof result === "object" && "isFirstLogin" in result) {
           if (result.isFirstLogin) {
             router.push("/user-configuration");
@@ -117,7 +115,6 @@ const LoginPage: React.FC = () => {
 
         const loginError = error as LoginError;
 
-        // Check if the error is specifically about email verification
         if (
           loginError?.message?.includes("verify your email") ||
           loginError?.message?.includes("verification") ||

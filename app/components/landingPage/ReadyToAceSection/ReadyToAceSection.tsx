@@ -2,11 +2,19 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Play } from "lucide-react";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 const ReadyToAceSection = () => {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+
   const handleStartInterview = () => {
-    // Handle start interview logic
-    console.log("Starting mock interview...");
+    if (isAuthenticated) {
+      router.push("/dashboard");
+    } else {
+      router.push("/login");
+    }
   };
 
   const handleCheckFAQ = () => {

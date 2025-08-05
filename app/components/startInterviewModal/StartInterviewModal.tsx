@@ -366,13 +366,6 @@ export default function StartInterviewModal({
           </button>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700 text-sm">{error}</p>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Interview Type Selector */}
           <InterviewTypeSelector
@@ -429,6 +422,13 @@ export default function StartInterviewModal({
             onAIFormDataChange={setAIFormData}
             isLoading={isLoading}
           />
+
+          {/* Error Message */}
+          {error && (
+            <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex space-x-3 pt-4">

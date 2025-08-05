@@ -9,25 +9,12 @@ import React, {
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  FormState,
+  ResetPasswordFormData,
+  ResetPasswordFormErrors,
+} from "../interfaces/resetPassword";
 
-interface ResetPasswordFormData {
-  newPassword: string;
-  confirmPassword: string;
-}
-
-interface ResetPasswordFormErrors {
-  newPassword?: string;
-  confirmPassword?: string;
-  general?: string;
-}
-
-interface FormState {
-  isLoading: boolean;
-  isSuccess: boolean;
-  error: string | null;
-}
-
-// Loading component for Suspense fallback
 const PageLoading = () => (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center">
     <div className="flex items-center space-x-2">
@@ -37,7 +24,6 @@ const PageLoading = () => (
   </div>
 );
 
-// Main component that uses useSearchParams
 const ResetPasswordContent: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -60,7 +46,6 @@ const ResetPasswordContent: React.FC = () => {
     error: null,
   });
 
-  // Check if token exists on component mount
   useEffect(() => {
     if (!token) {
       setFormState((prev) => ({
@@ -77,7 +62,6 @@ const ResetPasswordContent: React.FC = () => {
       [name]: value,
     }));
 
-    // Clear error when user starts typing
     if (errors[name as keyof ResetPasswordFormErrors]) {
       setErrors((prev) => ({
         ...prev,
@@ -85,7 +69,6 @@ const ResetPasswordContent: React.FC = () => {
       }));
     }
 
-    // Clear form error
     if (formState.error) {
       setFormState((prev) => ({
         ...prev,
@@ -157,7 +140,6 @@ const ResetPasswordContent: React.FC = () => {
             isSuccess: true,
           }));
 
-          // Redirect to login after 3 seconds
           setTimeout(() => {
             router.push("/login");
           }, 3000);

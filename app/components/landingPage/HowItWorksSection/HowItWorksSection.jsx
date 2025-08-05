@@ -1,6 +1,11 @@
 "use client";
 import React from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
+import startInterview from "@/public/assets/start-interview.png";
+import inputDetails from "@/public/assets/info.png";
+import dashboard from "@/public/assets/dashboard.png";
+import startInterviewModalImage from "@/public/assets/start-interview-modal.png";
 
 const HowItWorksSection = () => {
   const steps = [
@@ -16,6 +21,8 @@ const HowItWorksSection = () => {
       ],
       bgColor: "bg-blue-200",
       position: "right",
+      image: inputDetails,
+      imageAlt: "Input details interface",
     },
     {
       number: "02",
@@ -27,6 +34,8 @@ const HowItWorksSection = () => {
       ],
       bgColor: "bg-purple-300",
       position: "left",
+      image: startInterviewModalImage,
+      imageAlt: "Start interview modal",
     },
     {
       number: "03",
@@ -39,6 +48,8 @@ const HowItWorksSection = () => {
       ],
       bgColor: "bg-teal-200",
       position: "right",
+      image: dashboard,
+      imageAlt: "Feedback dashboard",
     },
     {
       number: "04",
@@ -49,6 +60,8 @@ const HowItWorksSection = () => {
       ],
       bgColor: "bg-purple-300",
       position: "left",
+      image: startInterview,
+      imageAlt: "Start interview interface",
     },
   ];
 
@@ -77,14 +90,14 @@ const HowItWorksSection = () => {
     },
   };
 
-  const shapeVariants = {
+  const imageVariants = {
     hidden: {
-      scale: 0,
-      rotate: -180,
+      opacity: 0,
+      scale: 0.8,
     },
     visible: {
+      opacity: 1,
       scale: 1,
-      rotate: 0,
       transition: {
         duration: 0.8,
         ease: "easeOut",
@@ -130,13 +143,13 @@ const HowItWorksSection = () => {
             <motion.div
               key={step.number}
               variants={stepVariants}
-              className={`relative flex flex-col lg:flex-row items-center gap-12 ${
+              className={`relative flex flex-col lg:flex-row items-center gap-8 lg:gap-12 ${
                 step.position === "left" ? "lg:flex-row-reverse" : ""
               }`}
             >
               {/* Content */}
-              <div className="flex-1 z-10">
-                <div className="max-w-lg">
+              <div className="flex-1 z-10 text-center lg:text-left">
+                <div className="max-w-lg mx-auto lg:mx-0">
                   <span className="text-2xl font-bold text-blue-600 mb-2 block">
                     {step.number}
                   </span>
@@ -146,7 +159,7 @@ const HowItWorksSection = () => {
                   <p className="text-lg text-gray-600 mb-6">
                     {step.description}
                   </p>
-                  <ul className="space-y-3">
+                  <ul className="space-y-3 text-left">
                     {step.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-start">
                         <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></div>
@@ -157,33 +170,36 @@ const HowItWorksSection = () => {
                 </div>
               </div>
 
-              {/* Decorative Shape */}
-              <div className="flex-1 relative flex justify-center lg:justify-start">
+              {/* Image Container */}
+              <div className="flex-1 relative flex justify-center">
                 <motion.div
-                  variants={shapeVariants}
-                  className={`w-80 h-80 md:w-96 md:h-96 ${step.bgColor} rounded-3xl transform`}
+                  variants={imageVariants}
+                  className={`relative w-full max-w-sm sm:max-w-md lg:max-w-lg xl:max-w-xl ${step.bgColor} rounded-3xl p-4 sm:p-6 lg:p-8`}
                   style={{
                     borderRadius:
                       index % 2 === 0
                         ? "60% 40% 30% 70% / 60% 30% 70% 40%"
                         : "40% 60% 70% 30% / 40% 70% 30% 60%",
                   }}
-                />
-
-                {/* Optional: Add icons or illustrations inside shapes */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 bg-white bg-opacity-30 rounded-full flex items-center justify-center">
-                    <span className="text-2xl font-bold text-white">
-                      {step.number}
-                    </span>
+                >
+                  <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden ">
+                    <Image
+                      src={step.image}
+                      alt={step.imageAlt}
+                      fill
+                      className="object-contain p-2 sm:p-4"
+                      // style={{ transform: "rotate(180deg)" }}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      priority={index < 2}
+                    />
                   </div>
-                </div>
+                </motion.div>
               </div>
 
               {/* Connecting Line (except for last item) */}
               {index < steps.length - 1 && (
                 <motion.div
-                  className="absolute left-1/2 transform -translate-x-1/2 top-full hidden lg:block"
+                  className="absolute left-1/2 transform -translate-x-1/2 top-full hidden lg:block z-0"
                   initial={{ scaleY: 0 }}
                   whileInView={{ scaleY: 1 }}
                   viewport={{ once: true }}

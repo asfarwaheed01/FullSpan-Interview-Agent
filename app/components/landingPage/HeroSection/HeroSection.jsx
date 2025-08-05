@@ -1,8 +1,20 @@
 "use client";
 import React from "react";
 import { ArrowRight, Mic, Video, Brain, Star } from "lucide-react";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function InterviewHero() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+
+  const handleStartInterview = () => {
+    if (isAuthenticated) {
+      router.push("/dashboard");
+    } else {
+      router.push("/login");
+    }
+  };
   return (
     <section className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
       {/* Animated background elements */}
@@ -45,7 +57,10 @@ export default function InterviewHero() {
 
             {/* CTA buttons */}
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up delay-300">
-              <button className="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105">
+              <button
+                onClick={handleStartInterview}
+                className="cursor-pointer group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105"
+              >
                 <span className="flex items-center justify-center">
                   Start Your Interview
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

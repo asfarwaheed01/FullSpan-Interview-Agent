@@ -72,10 +72,10 @@ export default function WhyUseSection() {
               </p>
 
               {/* Hover arrow */}
-              <div className="flex items-center text-purple-600 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
+              {/* <div className="flex items-center text-purple-600 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
                 <span className="text-sm font-medium mr-2">Learn more</span>
                 <ArrowRight className="w-4 h-4" />
-              </div>
+              </div> */}
 
               {/* Card border glow effect */}
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
