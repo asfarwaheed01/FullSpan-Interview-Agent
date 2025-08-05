@@ -5,7 +5,7 @@ import Image from "next/image";
 import startInterview from "@/public/assets/start-interview.png";
 import inputDetails from "@/public/assets/info.png";
 import dashboard from "@/public/assets/dashboard.png";
-import startInterviewModalImage from "@/public/assets/start-interview-modal.png";
+import startInterviewModalImage from "@/public/assets/start-Interview-modal.png";
 
 const HowItWorksSection = () => {
   const steps = [
