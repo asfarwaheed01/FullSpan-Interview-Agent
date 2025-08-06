@@ -43,7 +43,10 @@ const GoogleAuth: React.FC<GoogleAuthProps> = ({
       // Extract user information
       const userData = {
         email: user.email || "",
-        username: user.displayName || user.email?.split("@")[0] || "",
+        username: (user.displayName || user.email?.split("@")[0] || "").replace(
+          /\s+/g,
+          ""
+        ),
         image: user.photoURL || undefined,
       };
 
@@ -73,7 +76,6 @@ const GoogleAuth: React.FC<GoogleAuthProps> = ({
     } catch (error: unknown) {
       console.error("Google Auth Error:", error);
 
-      // Handle specific Firebase errors
       let errorMessage = "Google sign-in failed";
 
       if (error && typeof error === "object" && "code" in error) {

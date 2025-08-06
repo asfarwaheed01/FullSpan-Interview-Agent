@@ -6,24 +6,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/AuthContext";
 import GoogleAuth from "@/app/components/googleAuth/GoogleAuth";
-
-interface LoginFormData {
-  email: string;
-  password: string;
-  rememberMe: boolean;
-}
-
-interface LoginFormErrors {
-  email?: string;
-  password?: string;
-  general?: string;
-}
-
-interface LoginError {
-  message?: string;
-  status?: number;
-  needsEmailVerification?: boolean;
-}
+import {
+  LoginError,
+  LoginFormData,
+  LoginFormErrors,
+} from "@/app/interfaces/login";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
