@@ -842,14 +842,12 @@ export default function StartInterviewModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Interview Type Selector */}
           <InterviewTypeSelector
             selectedType={selectedType}
             onTypeChange={setSelectedType}
             isLoading={isLoading}
           />
 
-          {/* Dynamic Setup Components */}
           {selectedType === "general" && (
             <GeneralRoleSetup
               formData={generalFormData}
