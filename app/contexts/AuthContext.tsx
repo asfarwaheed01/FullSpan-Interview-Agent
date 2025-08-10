@@ -132,9 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
-        }/api/auth/login`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/login`,
         {
           method: "POST",
           headers: {
@@ -232,9 +230,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
-        }/api/auth/register`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/register`,
         {
           method: "POST",
           headers: {
@@ -294,9 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const response = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"
-        }/api/auth/verify-email`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/verify-email`,
         {
           method: "POST",
           headers: {
